@@ -1,0 +1,23 @@
+services:
+  db:
+    container_name: postgresdb
+    image: postgres:17.2
+    env_file:
+      - app.env
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: P@ssw0rd
+    volumes:
+      - gofermart:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+volumes:
+  gofermart:
+
+# docker exec -it postgresdb psql -U postgres -d gophermart
+# psql -h localhost -p 5432 -U postgres
+# create database bankdb;
+# create database gofermart;
+#\c test
+#\du

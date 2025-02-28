@@ -1,0 +1,45 @@
+set dotenv-load
+set dotenv-path := "./app.env"
+# Start postgres db service
+pg_up:
+    docker-compose up -d
+
+# Start postgres db service
+pg_start:
+    docker-compose start
+
+# Stop postgres db service
+pg_stop:
+    docker-compose stop
+
+# Create gophermart
+createdb:
+    docker-compose exec db createdb --username=postgres --owner=postgres gophermart
+
+# Drop gophermart
+dropdb:
+    docker-compose exec db dropdb --username=postgres gophermart
+
+# Apply migration to create tables
+migrateup:
+    migrate -path db/migrations -database "postgres://postgres:P@ssw0rd@localhost:5432/gophermart?sslmode=disable" -verbose up
+
+# Apply migration to delete tables
+migratedown:
+    migrate -path db/migrations -database "postgres://postgres:P@ssw0rd@localhost:5432/gophermart?sslmode=disable" -verbose down
+
+# Generate code
+sqlc:
+    sqlc generate
+
+# Testing code
+test:
+    go test -v -cover -count=1 -timeout 180s ./...
+    
+# Apply migration to create tables app1
+migrateapp1up:
+    migrate -path db/migrations -database "postgres://postgres:P@ssw0rd@localhost:5432/gophermart?sslmode=disable" -verbose up 1
+
+# Apply migration to delete tables app1
+migrateapp1down:
+    migrate -path db/migrations -database "postgres://postgres:P@ssw0rd@localhost:5432/gophermart?sslmode=disable" -verbose down 1
