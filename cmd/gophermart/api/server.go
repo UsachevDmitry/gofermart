@@ -3,6 +3,7 @@ package api
 import (
 	db "db/sqlc"
 	"net/http"
+	"middleware"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
 )
@@ -16,9 +17,17 @@ func NewServer(store *db.Store) *Server {
 	server := &Server{store: store}
 	router := gin.Default()
 
-	// TODO: add routes to router
-	router.GET("/accounts/:id", server.GetUser)
-	router.POST("/user/register", server.CreateUser)
+	// Public routes (не требуют аутентификации)
+	router.POST("/api/user/register", server.CreateUser)
+	router.POST("/api/user/login", server.loginUser)
+
+	// Protected routes (требуют аутентификации)
+	protected := router.Group("/api")
+	protected.Use(middleware.AuthMiddleware()) // Добавляем middleware для всех маршрутов в группе /api
+	{
+		protected.GET("/user/get/:login", server.GetUser)
+	}
+	// router.GET("/api/accounts/:id", server.GetUser)
 	server.router = router
 	return server
 }
@@ -34,7 +43,7 @@ func (server *Server) Start(address string) error {
 }
 
 type getUserRequest struct {
-	Login string `uri:"login" binding:"required,min=1"`
+	Login string `uri:"login" binding:"required"`
 }
 
 func (server *Server) GetUser(ctx *gin.Context) {

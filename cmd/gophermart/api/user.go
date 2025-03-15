@@ -2,9 +2,9 @@ package api
 
 import (
 	db "db/sqlc"
-	"utils"
 	"errors"
 	"net/http"
+	"utils"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -13,47 +13,53 @@ import (
 
 type createUserRequest struct {
 	Login        string `json:"login"`
-	Password string `json:"password"`
+	Password     string `json:"password"`
 }
 
-type createUserResponce struct {
-	Login             string `json:"login"`
-	Password  	  string `json:"password"`
-}
+// type createUserResponce struct {
+// 	Login             string `json:"login"`
+// 	Password  	  string `json:"password"`
+// }
 
 func (server *Server) CreateUser(ctx *gin.Context) {
 	var req createUserRequest
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponce(err))
+		ctx.Status(http.StatusBadRequest)
 		return
 	}
 	hashedPassword, err := utils.HashPassword(req.Password)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponce(err))
+		ctx.Status(http.StatusInternalServerError)
 		return
 	}
 	arg := db.CreateUserParams{
 		Login: 				req.Login,
 		Password:       hashedPassword,
 	}
-
 	user, err := server.store.CreateUser(ctx, arg)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
-			switch pgErr.Message {
+			switch pgErr.Code {
 			case "23505":
-				ctx.JSON(http.StatusForbidden, errorResponce(err))
+				ctx.Status(http.StatusConflict)
 				return
 			}
 		}
-		ctx.JSON(http.StatusInternalServerError, errorResponce(err))
+		ctx.Status(http.StatusInternalServerError)
 		return
 	}
-	rsp := createUserResponce{
-		Login:          user.Login,
-		Password: 	user.Password,
+	// Генерация JWT-токена
+	token, err := utils.GenerateJWT(user.Login)
+	if err != nil {
+		ctx.Status(http.StatusInternalServerError)
+		return
 	}
-	ctx.JSON(http.StatusOK, rsp)
+
+	// Успешный ответ с токеном
+	ctx.JSON(http.StatusOK, gin.H{
+		"token": token,
+	})
+	//ctx.Status(http.StatusOK)
 }
