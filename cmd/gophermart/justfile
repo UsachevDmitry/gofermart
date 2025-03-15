@@ -34,7 +34,7 @@ sqlc:
 
 # Testing code
 test:
-    go test -v -cover -count=1 -timeout 180s ./...
+    go test -v -cover -count=1 -timeout 180s ./db/...
     
 # Apply migration to create tables app1
 migrateapp1up:

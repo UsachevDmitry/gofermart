@@ -35,10 +35,9 @@ type Order struct {
 }
 
 type User struct {
-	ID           int32            `json:"id"`
-	Login        string           `json:"login"`
-	PasswordHash string           `json:"password_hash"`
-	CreatedAt    pgtype.Timestamp `json:"created_at"`
+	ID       int32  `json:"id"`
+	Login    string `json:"login"`
+	Password string `json:"password"`
 }
 
 type Withdrawal struct {

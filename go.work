@@ -3,5 +3,6 @@ go 1.23.1
 use (
         ../gofermart
         ./cmd/gophermart/db
+        ./cmd/gophermart/api
         ./cmd/gophermart/utils
 )

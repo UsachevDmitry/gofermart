@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 	"testing"
-	"github.com/UsachevDmitry/gofermart/cmd/gophermart/utils"
+	"utils"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
