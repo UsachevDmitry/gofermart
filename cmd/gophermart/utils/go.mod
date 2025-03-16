@@ -1,6 +1,6 @@
 module utils
 
-go 1.22.12
+go 1.23
 
 require (
 	github.com/go-faker/faker/v4 v4.6.0
