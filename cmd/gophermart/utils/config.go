@@ -5,27 +5,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-// type Config struct {
-// 	DBSource string `mapstructure:"DB_SOURCE"`
-// 	serverAddress string `mapstructure:"SERVER_ADDRESS"`
-// }
-// //LoadConfig func reads confihureations from file or environment variables
-// func LoadConfig(path string) (config Config, err error) {
-// 	viper.AddConfigPath(path)
-// 	viper.SetConfigName("app")
-// 	viper.SetConfigType("env")
-
-// 	// read environmentak variables
-// 	viper.AutomaticEnv()
-
-// 	err = viper.ReadInConfig()
-// 	if err!= nil {
-// 		return
-// 	}
-// 	err = viper.Unmarshal(&config)
-// 	return
-// }
-
 type Config struct {
 	DBSource            string `mapstructure:"DB_SOURCE"`              // Адрес подключения к базе данных
 	ServerAddress       string `mapstructure:"SERVER_ADDRESS"`         // Адрес и порт запуска сервиса
@@ -41,12 +20,6 @@ func LoadConfig(path string) (config Config, err error) {
 	// Чтение переменных окружения
 	viper.AutomaticEnv()
 
-	// Парсинг флагов
-	flag.StringVar(&config.ServerAddress, "a", "", "Адрес и порт запуска сервиса")
-	flag.StringVar(&config.DBSource, "d", "", "Адрес подключения к базе данных")
-	flag.StringVar(&config.AccrualSystemAddress, "r", "", "Адрес системы расчёта начислений")
-	flag.Parse()
-
 	// Чтение конфигурации из файла
 	err = viper.ReadInConfig()
 	if err != nil {
@@ -58,6 +31,12 @@ func LoadConfig(path string) (config Config, err error) {
 	if err != nil {
 		return
 	}
+	
+	// Парсинг флагов
+	flag.StringVar(&config.ServerAddress, "a", "", "Адрес и порт запуска сервиса")
+	flag.StringVar(&config.DBSource, "d", "", "Адрес подключения к базе данных")
+	flag.StringVar(&config.AccrualSystemAddress, "r", "", "Адрес системы расчёта начислений")
+	flag.Parse()
 
 	// Переопределение значений флагами, если они заданы
 	if config.ServerAddress == "" {
