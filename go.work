@@ -1,9 +1,11 @@
-go 1.22.12
+go 1.23.1
+
+toolchain go1.24.1
 
 use (
-        ../gofermart
-        ./cmd/gophermart/db
-        ./cmd/gophermart/api
-        ./cmd/gophermart/utils
-        ./cmd/gophermart/middleware
+	../gofermart
+	./cmd/gophermart/api
+	./cmd/gophermart/db
+	./cmd/gophermart/middleware
+	./cmd/gophermart/utils
 )
