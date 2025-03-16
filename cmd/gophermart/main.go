@@ -10,10 +10,10 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-const (
-	dbSource = "postgresql://postgres:P@ssw0rd@localhost:5432/gophermart?sslmode=disable"
-	serverAddress = "127.0.0.1:8080"
-)
+// const (
+// 	dbSource = "postgresql://postgres:P@ssw0rd@localhost:5432/gophermart?sslmode=disable"
+// 	serverAddress = "127.0.0.1:8000"
+// )
 
 func main() {
 	// config, err := utils.LoadConfig(".")
@@ -45,7 +45,7 @@ func main() {
 	store := db.NewStore(pool)
 	server := api.NewServer(store)
 
-	err = server.Start(serverAddress)
+	err = server.Start(config.ServerAddress) //serverAddress
 	if err != nil {
 		log.Fatal("Can not start server", err)
 	}
