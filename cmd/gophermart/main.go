@@ -16,10 +16,24 @@ const (
 )
 
 func main() {
+	// config, err := utils.LoadConfig(".")
+	// if err != nil {
+	// 	log.Fatal("can not read config file", err)
+	// }
+	
+	// Загрузка конфигурации
 	config, err := utils.LoadConfig(".")
 	if err != nil {
-		log.Fatal("can not read config file", err)
+		log.Fatalf("Ошибка загрузки конфигурации: %v", err)
 	}
+
+	// Вывод загруженной конфигурации
+	log.Printf("Конфигурация загружена: %+v\n", config)
+
+	// Использование конфигурации
+	log.Printf("Адрес сервера: %s\n", config.ServerAddress)
+	log.Printf("Адрес базы данных: %s\n", config.DBSource)
+	log.Printf("Адрес системы расчёта начислений: %s\n", config.AccrualSystemAddress)
 
 	pool, err := pgxpool.New(context.Background(), config.DBSource)
 	if err != nil {
