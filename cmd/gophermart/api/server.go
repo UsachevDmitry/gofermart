@@ -26,8 +26,12 @@ func NewServer(store *db.Store) *Server {
 	protected.Use(middleware.AuthMiddleware()) // Добавляем middleware для всех маршрутов в группе /api
 	{
 		protected.GET("/user/get/:login", server.GetUser)
+		protected.POST("/user/orders", server.uploadOrder)
+		protected.GET("/user/orders", server.getOrders)
+		protected.GET("/user/balance", server.getBalance)
+		protected.POST("/user/balance/withdraw", server.withdrawBalance)
+		protected.GET("/user/withdrawals", server.getWithdrawals)
 	}
-	// router.GET("/api/accounts/:id", server.GetUser)
 	server.router = router
 	return server
 }

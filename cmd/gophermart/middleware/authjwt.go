@@ -7,7 +7,7 @@ import (
     "github.com/golang-jwt/jwt/v5"
 )
 
-var jwtSecret = []byte("secret-key") // Замените на ваш секретный ключ
+var jwtSecret = []byte("secret-key") // ваш секретный ключ
 
 // AuthMiddleware проверяет JWT-токен
 func AuthMiddleware() gin.HandlerFunc {
