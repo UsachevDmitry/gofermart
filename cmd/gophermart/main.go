@@ -12,7 +12,7 @@ import (
 
 const (
 	dbSource = "postgresql://postgres:P@ssw0rd@localhost:5432/gophermart?sslmode=disable"
-	serverAddress = "127.0.0.1:8000"
+	serverAddress = "127.0.0.1:8080"
 )
 
 func main() {
@@ -20,7 +20,7 @@ func main() {
 	// if err != nil {
 	// 	log.Fatal("can not read config file", err)
 	// }
-	
+
 	// Загрузка конфигурации
 	config, err := utils.LoadConfig(".")
 	if err != nil {
