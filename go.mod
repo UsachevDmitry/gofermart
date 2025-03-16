@@ -1,6 +1,6 @@
 module github.com/UsachevDmitry/gofermart
 
-go 1.23
+go 1.22.12
 
 require github.com/jackc/pgx/v5 v5.7.2
 
