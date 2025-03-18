@@ -47,7 +47,12 @@ func (server *Server) CreateUser(ctx *gin.Context) {
 		return
 	}
 	// Генерация JWT-токена
-	token, err := utils.GenerateJWT(user.Login)
+	// token, err := utils.GenerateJWT(user.Login)
+	// if err != nil {
+	// 	ctx.Status(http.StatusInternalServerError)
+	// 	return
+	// }
+	_, err = utils.GenerateJWT(user.Login)
 	if err != nil {
 		ctx.Status(http.StatusInternalServerError)
 		return
