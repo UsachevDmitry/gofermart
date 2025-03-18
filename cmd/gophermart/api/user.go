@@ -46,21 +46,21 @@ func (server *Server) CreateUser(ctx *gin.Context) {
 		ctx.Status(http.StatusInternalServerError)
 		return
 	}
-	// Генерация JWT-токена
-	// token, err := utils.GenerateJWT(user.Login)
-	// if err != nil {
-	// 	ctx.Status(http.StatusInternalServerError)
-	// 	return
-	// }
-	_, err = utils.GenerateJWT(user.Login)
+	Генерация JWT-токена
+	token, err := utils.GenerateJWT(user.Login)
 	if err != nil {
 		ctx.Status(http.StatusInternalServerError)
 		return
 	}
-
-	// Успешный ответ с токеном
-	// ctx.JSON(http.StatusOK, gin.H{
-	// 	"token": token,
-	// })
-	ctx.Status(http.StatusOK)
+	// _, err = utils.GenerateJWT(user.Login)
+	// if err != nil {
+	// 	ctx.Status(http.StatusInternalServerError)
+	// 	return
+	// }
+	ctx.SetCookie("token", token, 3600, "/", "", false, true)
+	//Успешный ответ с токеном
+	ctx.JSON(http.StatusOK, gin.H{
+		"token": token,
+	})
+	// ctx.Status(http.StatusOK)
 }
