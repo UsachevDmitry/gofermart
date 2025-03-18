@@ -31,7 +31,7 @@ func LoadConfig(path string) (config Config, err error) {
 	if err != nil {
 		return
 	}
-	
+
 	// Парсинг флагов
 	flag.StringVar(&config.ServerAddress, "a", "", "Адрес и порт запуска сервиса")
 	flag.StringVar(&config.DBSource, "d", "", "Адрес подключения к базе данных")
@@ -40,10 +40,10 @@ func LoadConfig(path string) (config Config, err error) {
 
 	// Переопределение значений флагами, если они заданы
 	if config.ServerAddress == "" {
-		config.ServerAddress = viper.GetString("SERVER_ADDRESS")
+		config.ServerAddress = viper.GetString("RUN_ADDRESS")
 	}
 	if config.DBSource == "" {
-		config.DBSource = viper.GetString("DB_SOURCE")
+		config.DBSource = viper.GetString("DATABASE_URI")
 	}
 	if config.AccrualSystemAddress == "" {
 		config.AccrualSystemAddress = viper.GetString("ACCRUAL_SYSTEM_ADDRESS")
