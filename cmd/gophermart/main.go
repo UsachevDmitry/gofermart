@@ -27,9 +27,6 @@ func main() {
 		log.Fatalf("Ошибка загрузки конфигурации: %v", err)
 	}
 
-	// // Применение миграций
-	// utils.RunMigrations(config.DBSource)
-
 	// Вывод загруженной конфигурации
 	log.Printf("Конфигурация загружена: %+v\n", config)
 
@@ -47,6 +44,9 @@ func main() {
 
 	store := db.NewStore(pool)
 	server := api.NewServer(store)
+
+	// Применение миграций
+	utils.RunMigrations(config.DBSource)
 
 	err = server.Start(config.ServerAddress) //serverAddress
 	if err != nil {
