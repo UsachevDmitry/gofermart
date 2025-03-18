@@ -26,9 +26,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("Ошибка загрузки конфигурации: %v", err)
 	}
-	
-	// Применение миграций
-	utils.RunMigrations(config.DBSource)
+
+	// // Применение миграций
+	// utils.RunMigrations(config.DBSource)
 
 	// Вывод загруженной конфигурации
 	log.Printf("Конфигурация загружена: %+v\n", config)
