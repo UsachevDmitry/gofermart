@@ -17,8 +17,8 @@ func LoadConfig(path string) (config Config, err error) {
 	// viper.SetConfigName("app")
 	// viper.SetConfigType("env")
 
-	// // Чтение переменных окружения
-	// viper.AutomaticEnv()
+	// Чтение переменных окружения
+	viper.AutomaticEnv()
 
 	// // Чтение конфигурации из файла
 	// err = viper.ReadInConfig()
@@ -26,11 +26,11 @@ func LoadConfig(path string) (config Config, err error) {
 	// 	return
 	// }
 
-	// // Привязка значений из файла и переменных окружения к структуре Config
-	// err = viper.Unmarshal(&config)
-	// if err != nil {
-	// 	return
-	// }
+	// Привязка значений из файла и переменных окружения к структуре Config
+	err = viper.Unmarshal(&config)
+	if err != nil {
+		return
+	}
 
 	// Парсинг флагов
 	flag.StringVar(&config.ServerAddress, "a", "", "Адрес и порт запуска сервиса")
