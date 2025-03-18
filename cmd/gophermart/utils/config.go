@@ -17,14 +17,14 @@ func LoadConfig(path string) (config Config, err error) {
 	// viper.SetConfigName("app")
 	// viper.SetConfigType("env")
 
-	// Чтение переменных окружения
-	viper.AutomaticEnv()
-
-	// // Чтение конфигурации из файла
+    // // Чтение конфигурации из файла
 	// err = viper.ReadInConfig()
 	// if err != nil {
 	// 	return
 	// }
+
+	// Чтение переменных окружения
+	viper.AutomaticEnv()
 
 	// Привязка значений из файла и переменных окружения к структуре Config
 	err = viper.Unmarshal(&config)

@@ -16,50 +16,101 @@ type createUserRequest struct {
 	Password     string `json:"password"`
 }
 
-// type createUserResponce struct {
-// 	Login             string `json:"login"`
-// 	Password  	  string `json:"password"`
+// // type createUserResponce struct {
+// // 	Login             string `json:"login"`
+// // 	Password  	  string `json:"password"`
+// // }
+
+// func (server *Server) CreateUser(ctx *gin.Context) {
+// 	var req createUserRequest
+
+// 	if err := ctx.ShouldBindJSON(&req); err != nil {
+// 		ctx.Status(http.StatusBadRequest)
+// 		return
+// 	}
+// 	hashedPassword, err := utils.HashPassword(req.Password)
+// 	if err != nil {
+// 		ctx.Status(http.StatusInternalServerError)
+// 		return
+// 	}
+// 	arg := db.CreateUserParams{
+// 		Login: 				req.Login,
+// 		Password:       hashedPassword,
+// 	}
+// 	user, err := server.store.CreateUser(ctx, arg)
+// 	if err != nil {
+// 		var pgErr *pgconn.PgError
+// 		if errors.As(err, &pgErr) {
+// 			switch pgErr.Code {
+// 			case "23505":
+// 				ctx.Status(http.StatusConflict)
+// 				return
+// 			}
+// 		}
+// 		ctx.Status(http.StatusInternalServerError)
+// 		return
+// 	}
+// 	// Генерация JWT-токена
+// 	token, err := utils.GenerateJWT(user.Login)
+// 	if err != nil {
+// 		ctx.Status(http.StatusInternalServerError)
+// 		return
+// 	}
+
+// 	// Успешный ответ с токеном
+// 	ctx.JSON(http.StatusOK, gin.H{
+// 		"token": token,
+// 	})
+// 	//ctx.Status(http.StatusOK)
 // }
 
 func (server *Server) CreateUser(ctx *gin.Context) {
 	var req createUserRequest
 
+	// Парсим тело запроса
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.Status(http.StatusBadRequest)
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "неверный формат запроса"})
 		return
 	}
+
+	// Хешируем пароль
 	hashedPassword, err := utils.HashPassword(req.Password)
 	if err != nil {
-		ctx.Status(http.StatusInternalServerError)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "ошибка при хешировании пароля"})
 		return
 	}
+
+	// Создаем пользователя
 	arg := db.CreateUserParams{
-		Login: 				req.Login,
-		Password:       hashedPassword,
+		Login:    req.Login,
+		Password: hashedPassword,
 	}
 	user, err := server.store.CreateUser(ctx, arg)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
 			switch pgErr.Code {
-			case "23505":
-				ctx.Status(http.StatusConflict)
+			case "23505": // Ошибка уникальности (логин уже занят)
+				ctx.JSON(http.StatusConflict, gin.H{"error": "логин уже занят"})
 				return
 			}
 		}
-		ctx.Status(http.StatusInternalServerError)
-		return
-	}
-	// Генерация JWT-токена
-	token, err := utils.GenerateJWT(user.Login)
-	if err != nil {
-		ctx.Status(http.StatusInternalServerError)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "внутренняя ошибка сервера"})
 		return
 	}
 
-	// Успешный ответ с токеном
+	// Генерация JWT-токена
+	token, err := utils.GenerateJWT(user.Login)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "ошибка при генерации токена"})
+		return
+	}
+
+	// Устанавливаем токен в cookies
+	ctx.SetCookie("token", token, 3600, "/", "", false, true)
+
+	// Успешный ответ
 	ctx.JSON(http.StatusOK, gin.H{
 		"token": token,
 	})
-	//ctx.Status(http.StatusOK)
 }
