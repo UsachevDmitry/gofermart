@@ -1,3 +1,4 @@
+DROP TABLE IF EXISTS schema_migrations;
 DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS orders;
 DROP TABLE IF EXISTS loyalty_accounts;
