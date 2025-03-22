@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	//"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
@@ -25,18 +25,18 @@ func RunMigrations(databaseURL string) {
 		log.Fatalf("Папка с миграциями не найдена: %s", migrationsPath)
 	}
 
-	// // Применяем миграции
-	// m, err := migrate.New(
-	// 	"file://"+migrationsPath,
-	// 	databaseURL,
-	// )
-	// if err != nil {
-	// 	log.Fatalf("Ошибка при создании миграции: %v", err)
-	// }
+	// Применяем миграции
+	m, err := migrate.New(
+		"file://"+migrationsPath,
+		databaseURL,
+	)
+	if err != nil {
+		log.Fatalf("Ошибка при создании миграции: %v", err)
+	}
 
-	// if err := m.Up(); err != nil && err != migrate.ErrNoChange {
-	// 	log.Fatalf("Ошибка при применении миграций: %v", err)
-	// }
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		log.Fatalf("Ошибка при применении миграций: %v", err)
+	}
 
 	log.Println("Миграции успешно применены")
 }
