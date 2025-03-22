@@ -2,8 +2,8 @@ go 1.22
 
 use (
 	../gofermart
-	./cmd/gophermart/api
-	./cmd/gophermart/db
-	./cmd/gophermart/middleware
-	./cmd/gophermart/utils
+	./internal/api
+	./internal/db
+	./internal/middleware
+	./internal/utils
 )

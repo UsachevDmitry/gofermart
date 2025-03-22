@@ -19,7 +19,7 @@ func RunMigrations(databaseURL string) {
 	log.Printf("Текущая рабочая директория: %s", wd)
 
 	// Формируем абсолютный путь до папки с миграциями
-	migrationsPath := filepath.Join(wd, "db/migrations")
+	migrationsPath := filepath.Join(wd, "../../internal/db/migrations")
 
 	// Проверяем, существует ли папка с миграциями
 	if _, err := os.Stat(migrationsPath); os.IsNotExist(err) {
