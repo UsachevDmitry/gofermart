@@ -35,7 +35,6 @@ func (server *Server) uploadOrder(ctx *gin.Context) {
         return
     }
 
-
     // Сохранение номера заказа в базе данных
     _ , err = server.store.CreateOrder(ctx, db.CreateOrderParams{
         UserID:      userIDInt4,
@@ -76,106 +75,18 @@ type OrderResponse struct {
     UploadedAt time.Time `json:"uploaded_at"`
 }
 
-// func (server *Server) getOrders(ctx *gin.Context) {
-// 	// Проверка аутентификации
-// 	login, exists := ctx.Get("login")
-// 	if !exists {
-// 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "пользователь не аутентифицирован"}) // 401
-// 		return
-// 	}
-// 	user, _ := server.store.GetUser(ctx, login.(string))
-// 	userID := user.ID
-// 	// Преобразование userID в pgtype.Int4
-// 	userIDInt4 := pgtype.Int4{Int32: userID, Valid: true}
-
-//     // Получаем список заказов пользователя
-//     orders, err := server.store.GetOrdersByUserID(ctx.Request.Context(), userIDInt4)
-//     if err != nil {
-//         ctx.JSON(http.StatusInternalServerError, gin.H{"error": "внутренняя ошибка сервера"}) // 500
-//         return
-//     }
-
-//     // Если заказов нет, возвращаем 204
-//     if len(orders) == 0 {
-//         ctx.Status(http.StatusNoContent) // 204
-//         return
-//     }
-
-//     // Форматируем ответ
-//     var response []OrderResponse
-//     for _, order := range orders {
-//         response = append(response, OrderResponse{
-//             Number:     order.OrderNumber,
-//             Status:     order.Status,
-//             Accrual:    order.Accrual.Float64,
-//             UploadedAt: order.UploadedAt.Time,
-//         })
-//     }
-
-//     // Возвращаем ответ
-//     ctx.JSON(http.StatusOK, response) // 200
-// }
-
-// func (server *Server) getOrders(ctx *gin.Context) {
-//     // Проверка аутентификации
-//     login, exists := ctx.Get("login")
-//     if !exists {
-//         ctx.JSON(http.StatusUnauthorized, gin.H{"error": "пользователь не аутентифицирован"}) // 401
-//         return
-//     }
-
-//     // Получаем пользователя
-//     user, err := server.store.GetUser(ctx, login.(string))
-//     if err != nil {
-//         ctx.JSON(http.StatusInternalServerError, gin.H{"error": "внутренняя ошибка сервера"}) // 500
-//         return
-//     }
-
-//     // Преобразование userID в pgtype.Int4
-//     userIDInt4 := pgtype.Int4{Int32: user.ID, Valid: true}
-
-//     // Получаем список заказов пользователя
-//     orders, err := server.store.GetOrdersByUserID(ctx.Request.Context(), userIDInt4)
-//     if err != nil {
-//         ctx.JSON(http.StatusInternalServerError, gin.H{"error": "внутренняя ошибка сервера"}) // 500
-//         return
-//     }
-
-//     // Если заказов нет, возвращаем 204
-//     if len(orders) == 0 {
-//         ctx.Status(http.StatusNoContent) // 204
-//         return
-//     }
-
-//     // Форматируем ответ
-//     var response []OrderResponse
-//     for _, order := range orders {
-//         response = append(response, OrderResponse{
-//             Number:     order.OrderNumber,
-//             Status:     order.Status,
-//             Accrual:    order.Accrual.Float64,
-//             UploadedAt: order.UploadedAt.Time,
-//         })
-//     }
-
-//     // Возвращаем ответ
-//     ctx.JSON(http.StatusOK, response) // 200
-// }
-
 func (server *Server) getOrders(ctx *gin.Context) {
     // Проверка аутентификации
     login, exists := ctx.Get("login")
     if !exists {
-        //ctx.JSON(http.StatusUnauthorized, gin.H{"error": "пользователь не аутентифицирован"}) // 401
-        ctx.Status(http.StatusUnauthorized) // 401
+        ctx.JSON(http.StatusUnauthorized, gin.H{"error": "пользователь не аутентифицирован"}) // 401
         return
     }
 
     // Получаем пользователя
     user, err := server.store.GetUser(ctx, login.(string))
     if err != nil {
-        //ctx.JSON(http.StatusInternalServerError, gin.H{"error": "внутренняя ошибка сервера"}) // 500
-        ctx.Status(http.StatusInternalServerError) // 500
+        ctx.JSON(http.StatusInternalServerError, gin.H{"error": "внутренняя ошибка сервера"}) // 500
         return
     }
 
@@ -185,15 +96,13 @@ func (server *Server) getOrders(ctx *gin.Context) {
     // Получаем список заказов пользователя
     orders, err := server.store.GetOrdersByUserID(ctx.Request.Context(), userIDInt4)
     if err != nil {
-        //ctx.JSON(http.StatusInternalServerError, gin.H{"error": "внутренняя ошибка сервера"}) // 500
-        ctx.Status(http.StatusInternalServerError) // 500
+        ctx.JSON(http.StatusInternalServerError, gin.H{"error": "внутренняя ошибка сервера"}) // 500
         return
     }
 
     // Если заказов нет, возвращаем 204
     if len(orders) == 0 {
-        ctx.Status(http.StatusNoContent) // 204
-        //ctx.JSON(http.StatusNoContent, "") // 204
+        ctx.JSON(http.StatusNoContent, "") // 204
         return
     }
 
@@ -210,5 +119,4 @@ func (server *Server) getOrders(ctx *gin.Context) {
 
     // Возвращаем ответ
     ctx.JSON(http.StatusOK, response) // 200
-    //ctx.Status(http.StatusOK) // 200
 }

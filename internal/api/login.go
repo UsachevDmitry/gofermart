@@ -15,46 +15,6 @@ type loginUserRequest struct {
     Password string `json:"password"`
 }
 
-// func (server *Server) loginUser(ctx *gin.Context) {
-//     var req loginUserRequest
-
-//     // Парсинг JSON-запроса
-//     if err := ctx.ShouldBindJSON(&req); err != nil {
-//         ctx.JSON(http.StatusBadRequest, gin.H{"error": "неверный формат запроса"}) // 400
-//         return
-//     }
-
-//     // Поиск пользователя в базе данных
-//     user, err := server.store.GetUser(ctx, req.Login)
-//     if err != nil {
-// 		if errors.Is(err, pgx.ErrNoRows) {
-// 			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "неверная пара логин/пароль"}) // 401
-// 			return
-// 		}
-//         ctx.JSON(http.StatusInternalServerError, gin.H{"error": "внутренняя ошибка сервера"}) // 500
-//         return
-//     }
-
-//     // Проверка пароля
-//     err = utils.CheckPassword(req.Password, user.Password)
-//     if err != nil {
-//         ctx.JSON(http.StatusUnauthorized, gin.H{"error": "неверная пара логин/пароль"}) // 401
-//         return
-//     }
-
-//     // Генерация JWT-токена
-//     token, err := utils.GenerateJWT(user.Login)
-//     if err != nil {
-//         ctx.JSON(http.StatusInternalServerError, gin.H{"error": "внутренняя ошибка сервера"}) // 500
-//         return
-//     }
-
-//     // Успешный ответ с токеном
-//     ctx.JSON(http.StatusOK, gin.H{
-//         "token": token,
-//     }) // 200
-// }
-
 func (server *Server) loginUser(ctx *gin.Context) {
     var req loginUserRequest
     if err := ctx.ShouldBindJSON(&req); err != nil {
