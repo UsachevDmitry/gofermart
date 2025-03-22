@@ -76,10 +76,10 @@ type BalanceResponse struct {
 //     ctx.JSON(http.StatusOK, response) // 200
 // }
 
-// type WithdrawRequest struct {
-//     Order string  `json:"order"`
-//     Sum   float64 `json:"sum"`
-// }
+type WithdrawRequest struct {
+    Order string  `json:"order"`
+    Sum   float64 `json:"sum"`
+}
 
 func (server *Server) getBalance(ctx *gin.Context) {
     // Проверка аутентификации
