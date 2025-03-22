@@ -6,8 +6,8 @@ import (
 )
 
 type Config struct {
-	DBSource            string `mapstructure:"DATABASE_URI"`              // Адрес подключения к базе данных
 	ServerAddress       string `mapstructure:"RUN_ADDRESS"`         // Адрес и порт запуска сервиса
+	DBSource            string `mapstructure:"DATABASE_URI"`              // Адрес подключения к базе данных
 	AccrualSystemAddress string `mapstructure:"ACCRUAL_SYSTEM_ADDRESS"` // Адрес системы расчёта начислений
 }
 

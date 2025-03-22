@@ -28,7 +28,7 @@ func main() {
 	}
 
 	// Применение миграций
-	utils.RunMigrations(config.DBSource)
+	//utils.RunMigrations(config.DBSource)
 
 	// Вывод загруженной конфигурации
 	log.Printf("Конфигурация загружена: %+v\n", config)
