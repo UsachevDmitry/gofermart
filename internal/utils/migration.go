@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -15,6 +16,7 @@ func RunMigrations(databaseURL string) {
 	wd, err := os.Getwd()
 	if err != nil {
 		log.Fatalf("Ошибка при получении рабочей директории: %v", err)
+		fmt.Printf("Ошибка при получении рабочей директории: %v", err)
 	}
 	log.Printf("Текущая рабочая директория: %s", wd)
 
@@ -24,6 +26,7 @@ func RunMigrations(databaseURL string) {
 	// Проверяем, существует ли папка с миграциями
 	if _, err := os.Stat(migrationsPath); os.IsNotExist(err) {
 		log.Fatalf("Папка с миграциями не найдена: %s", migrationsPath)
+		fmt.Printf("Папка с миграциями не найдена: %s", migrationsPath)
 	}
 
 	// Применяем миграции
@@ -33,11 +36,14 @@ func RunMigrations(databaseURL string) {
 	)
 	if err != nil {
 		log.Fatalf("Ошибка при создании миграции: %v", err)
+		fmt.Printf("Ошибка при создании миграции: %v", err)
 	}
 
 	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
 		log.Fatalf("Ошибка при применении миграций: %v", err)
+		fmt.Printf("Ошибка при применении миграций: %v", err)
 	}
 
 	log.Println("Миграции успешно применены")
+	fmt.Printf("Миграции успешно применены")
 }
