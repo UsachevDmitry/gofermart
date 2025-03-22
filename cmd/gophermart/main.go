@@ -16,11 +16,6 @@ import (
 // )
 
 func main() {
-	// config, err := utils.LoadConfig(".")
-	// if err != nil {
-	// 	log.Fatal("can not read config file", err)
-	// }
-
 	// Загрузка конфигурации
 	config, err := utils.LoadConfig(".")
 	if err != nil {
