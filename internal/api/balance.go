@@ -115,6 +115,72 @@ func (s *Server) getBalance(ctx *gin.Context) {
     ctx.JSON(http.StatusOK, response) // 200
 }
 
+// func (s *Server) withdrawBalance(ctx *gin.Context) {
+//     // Проверка аутентификации
+//     login, exists := ctx.Get("login")
+//     if !exists {
+//         ctx.JSON(http.StatusUnauthorized, gin.H{"error": "пользователь не аутентифицирован"}) // 401
+//         return
+//     }
+//     user, err := s.store.GetUser(ctx, login.(string))
+//     if err != nil {
+//         ctx.JSON(http.StatusInternalServerError, gin.H{"error": "внутренняя ошибка сервера"}) // 500
+//         return
+//     }
+
+//     // Преобразование userID в pgtype.Int4
+//     userIDInt4 := pgtype.Int4{Int32: user.ID, Valid: true}
+
+//     // Парсим тело запроса
+//     var req WithdrawRequest
+//     if err := ctx.ShouldBindJSON(&req); err != nil {
+//         ctx.JSON(http.StatusBadRequest, gin.H{"error": "неверный формат запроса"}) // 400
+//         return
+//     }
+
+//     // Проверяем номер заказа с помощью алгоритма Луна
+//     if !utils.IsValidLuhn(req.Order) {
+//         ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": "неверный номер заказа"}) // 422
+//         return
+//     }
+
+//     // Проверяем, достаточно ли средств на счету
+//     balance, err := s.store.GetBalanceByUserID(ctx.Request.Context(), userIDInt4)
+//     if err != nil {
+//         ctx.JSON(http.StatusInternalServerError, gin.H{"error": "внутренняя ошибка сервера"}) // 500
+//         return
+//     }
+//     if balance.CurrentBalance < req.Sum {
+//         ctx.JSON(http.StatusPaymentRequired, gin.H{"error": "на счету недостаточно средств"}) // 402
+//         return
+//     }
+
+//     // Регистрируем списание
+//     err = s.store.CreateWithdrawal(ctx.Request.Context(), db.CreateWithdrawalParams{
+//         UserID:      userIDInt4,
+//         OrderNumber: req.Order,
+//         Sum:         req.Sum,
+//     })
+//     if err != nil {
+//         ctx.JSON(http.StatusInternalServerError, gin.H{"error": "внутренняя ошибка сервера"}) // 500
+//         return
+//     }
+
+//     // Обновляем баланс пользователя
+//     err = s.store.UpdateBalance(ctx.Request.Context(), db.UpdateBalanceParams{
+//         UserID:           userIDInt4,
+//         CurrentBalance:   balance.CurrentBalance - req.Sum,
+//         WithdrawnBalance: balance.WithdrawnBalance + req.Sum,
+//     })
+//     if err != nil {
+//         ctx.JSON(http.StatusInternalServerError, gin.H{"error": "внутренняя ошибка сервера"}) // 500
+//         return
+//     }
+
+//     // Успешный ответ
+//     ctx.Status(http.StatusOK) // 200
+// }
+
 func (s *Server) withdrawBalance(ctx *gin.Context) {
     // Проверка аутентификации
     login, exists := ctx.Get("login")
@@ -124,6 +190,7 @@ func (s *Server) withdrawBalance(ctx *gin.Context) {
     }
     user, err := s.store.GetUser(ctx, login.(string))
     if err != nil {
+        log.Printf("Failed to get user: %v", err)
         ctx.JSON(http.StatusInternalServerError, gin.H{"error": "внутренняя ошибка сервера"}) // 500
         return
     }
@@ -147,6 +214,7 @@ func (s *Server) withdrawBalance(ctx *gin.Context) {
     // Проверяем, достаточно ли средств на счету
     balance, err := s.store.GetBalanceByUserID(ctx.Request.Context(), userIDInt4)
     if err != nil {
+        log.Printf("Failed to get balance: %v", err)
         ctx.JSON(http.StatusInternalServerError, gin.H{"error": "внутренняя ошибка сервера"}) // 500
         return
     }
@@ -162,6 +230,7 @@ func (s *Server) withdrawBalance(ctx *gin.Context) {
         Sum:         req.Sum,
     })
     if err != nil {
+        log.Printf("Failed to create withdrawal: %v", err)
         ctx.JSON(http.StatusInternalServerError, gin.H{"error": "внутренняя ошибка сервера"}) // 500
         return
     }
@@ -173,6 +242,7 @@ func (s *Server) withdrawBalance(ctx *gin.Context) {
         WithdrawnBalance: balance.WithdrawnBalance + req.Sum,
     })
     if err != nil {
+        log.Printf("Failed to update balance: %v", err)
         ctx.JSON(http.StatusInternalServerError, gin.H{"error": "внутренняя ошибка сервера"}) // 500
         return
     }
