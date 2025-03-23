@@ -6,7 +6,8 @@ import (
 	"utils"
 	"context"
 	"log"
-
+	"service"
+	//"time"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -41,9 +42,14 @@ func main() {
 	defer pool.Close()
 
 	store := db.NewStore(pool)
-	server := api.NewServer(store)
+	// Инициализация сервиса
+	orderService := service.NewOrderService(store)
+	server := api.NewServer(store, orderService)
 
 
+
+    // // Запуск воркера для обновления статусов заказов
+    // go StartOrderStatusUpdater(10 * time.Second)
 
 	err = server.Start(config.ServerAddress) //serverAddress
 	if err != nil {
