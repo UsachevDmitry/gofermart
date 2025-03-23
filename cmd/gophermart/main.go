@@ -175,7 +175,7 @@ func (w *Worker) getAccrualForOrder(orderNumber string) (float64, error) {
 		log.Fatalf("Ошибка загрузки конфигурации: %v", err)
 	}
 	// Формируем URL для запроса
-	url := fmt.Sprintf("%s/api/orders/%s", config.AccrualSystemAddress, orderNumber)
+	url := fmt.Sprintf("http://%s/api/orders/%s", config.AccrualSystemAddress, orderNumber)
 
 	// Выполняем GET-запрос
 	resp, err := http.Get(url)
