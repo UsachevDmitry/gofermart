@@ -13,8 +13,7 @@ import (
 
 type OrderService struct {
     repo *db.Store
-    AccrualSystemAddress *utils.Config
-}
+    config *utils.Config }
 
 func NewOrderService(repo *db.Store) *OrderService {
     return &OrderService{repo: repo}
@@ -127,7 +126,7 @@ type AccrualResponse struct {
 
 func (s *OrderService) fetchAccrualStatus(orderNumber string) (string, float64, error) {
     // Формируем URL для запроса
-    url := fmt.Sprintf("%s/api/orders/%s", s.AccrualSystemAddress, orderNumber)
+    url := fmt.Sprintf("%s/api/orders/%s", s.config.AccrualSystemAddress, orderNumber)
 
     // Создаем HTTP-клиент с таймаутом
     client := &http.Client{
