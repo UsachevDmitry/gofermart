@@ -9,6 +9,11 @@ import (
 	"service"
 	"time"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"fmt"
+	"net/http"
+	"errors"
+	"encoding/json"
+	"io"
 )
 
 // const (
@@ -124,7 +129,110 @@ func (w *Worker) UpdateBalances() {
 
 // CalculateNewBalance вычисляет новый баланс для пользователя
 func (w *Worker) CalculateNewBalance(userID string) (float64, error) {
-	// Здесь можно реализовать логику расчета баланса
-	// Например, запрос к внешнему API или вычисление на основе данных в базе
-	return 1000.0, nil // Пример: возвращаем фиксированное значение
+	// Получаем список заказов пользователя из базы данных
+	ctx := context.Background()
+	rows, err := w.db.Query(ctx, `
+		SELECT order_number
+		FROM orders
+		WHERE user_id = $1 AND status != 'PROCESSED' AND status != 'INVALID'
+	`, userID)
+	if err != nil {
+		return 0, fmt.Errorf("ошибка при получении заказов: %v", err)
+	}
+	defer rows.Close()
+
+	var totalAccrual float64
+
+	// Обрабатываем каждый заказ
+	for rows.Next() {
+		var orderNumber string
+		if err := rows.Scan(&orderNumber); err != nil {
+			return 0, fmt.Errorf("ошибка при сканировании номера заказа: %v", err)
+		}
+
+		// Запрашиваем информацию о начислении для заказа
+		accrual, err := w.getAccrualForOrder(orderNumber)
+		if err != nil {
+			return 0, fmt.Errorf("ошибка при запросе начисления для заказа %s: %v", orderNumber, err)
+		}
+
+		// Суммируем начисления
+		totalAccrual += accrual
+	}
+
+	return totalAccrual, nil
+}
+
+type AccrualResponse struct {
+	Order   string  `json:"order"`
+	Status  string  `json:"status"`
+	Accrual float64 `json:"accrual,omitempty"` // omitempty, так как поле может отсутствовать
+}
+
+func (w *Worker) getAccrualForOrder(orderNumber string) (float64, error) {
+	config, err := utils.LoadConfig(".")
+	if err != nil {
+		log.Fatalf("Ошибка загрузки конфигурации: %v", err)
+	}
+	// Формируем URL для запроса
+	url := fmt.Sprintf("%s/api/orders/%s", config.AccrualSystemAddress, orderNumber)
+
+	// Выполняем GET-запрос
+	resp, err := http.Get(url)
+	if err != nil {
+		return 0, fmt.Errorf("ошибка при выполнении запроса: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// Обрабатываем возможные коды ответа
+	switch resp.StatusCode {
+	case http.StatusOK:
+		// Парсим ответ
+		var accrualResp AccrualResponse
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return 0, fmt.Errorf("ошибка при чтении ответа: %v", err)
+		}
+
+		if err := json.Unmarshal(body, &accrualResp); err != nil {
+			return 0, fmt.Errorf("ошибка при парсинге JSON: %v", err)
+		}
+
+		// Проверяем статус заказа
+		switch accrualResp.Status {
+		case "PROCESSED":
+			return accrualResp.Accrual, nil
+		case "INVALID", "REGISTERED", "PROCESSING":
+			return 0, nil
+		default:
+			return 0, fmt.Errorf("неизвестный статус заказа: %s", accrualResp.Status)
+		}
+
+	case http.StatusNoContent:
+		// Заказ не зарегистрирован в системе
+		return 0, nil
+
+	case http.StatusTooManyRequests:
+		// Превышено количество запросов
+		retryAfter := resp.Header.Get("Retry-After")
+		if retryAfter == "" {
+			retryAfter = "60" // Значение по умолчанию
+		}
+
+		retryDuration, err := time.ParseDuration(retryAfter + "s")
+		if err != nil {
+			return 0, fmt.Errorf("ошибка при парсинге Retry-After: %v", err)
+		}
+
+		// Ждем и повторяем запрос
+		time.Sleep(retryDuration)
+		return w.getAccrualForOrder(orderNumber)
+
+	case http.StatusInternalServerError:
+		// Внутренняя ошибка сервера
+		return 0, errors.New("внутренняя ошибка сервера системы начислений")
+
+	default:
+		return 0, fmt.Errorf("неожиданный статус ответа: %s", resp.Status)
+	}
 }
