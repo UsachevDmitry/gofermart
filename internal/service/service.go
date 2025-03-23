@@ -76,6 +76,57 @@ type OrderService struct {
 
 //     return nil
 // }
+// func (s *OrderService) UpdateOrder(ctx context.Context, orderNumber string, status string, accrual float64) error {
+//     // Обновляем статус и начисление заказа
+//     if err := s.repo.UpdateOrderStatus(ctx, db.UpdateOrderStatusParams{
+//         Status:      status,
+//         Accrual:     pgtype.Float8{Float64: accrual, Valid: true},
+//         OrderNumber: orderNumber,
+//     }); err != nil {
+//         return fmt.Errorf("failed to update order status: %w", err)
+//     }
+
+//     // Если заказ обработан, обновляем баланс пользователя
+//     if status == "PROCESSED" {
+//         // Получаем ID пользователя, которому принадлежит заказ
+//         userID, err := s.repo.GetOrderOwner(ctx, orderNumber)
+//         if err != nil {
+//             return fmt.Errorf("failed to get order owner: %w", err)
+//         }
+
+//         // Обновляем баланс пользователя
+//         if err := s.repo.UpdateLoyaltyAccountBalance(ctx, db.UpdateLoyaltyAccountBalanceParams{
+//             CurrentBalance: accrual,
+//             UserID:         userID,
+//         }); err != nil {
+//             return fmt.Errorf("failed to update loyalty account balance: %w", err)
+//         }
+
+//         // Получаем ID аккаунта пользователя
+//         accountID, err := s.repo.GetLoyaltyAccountID(ctx, userID)
+//         if err != nil {
+//             return fmt.Errorf("failed to get loyalty account ID: %w", err)
+//         }
+
+//         // Получаем ID заказа
+//         orderID, err := s.repo.GetOrderID(ctx, orderNumber)
+//         if err != nil {
+//             return fmt.Errorf("failed to get order ID: %w", err)
+//         }
+
+//         // Создаем запись о транзакции
+//         if err := s.repo.CreateLoyaltyTransaction(ctx, db.CreateLoyaltyTransactionParams{
+//             AccountID:       pgtype.Int4{Int32: accountID, Valid: true},
+//             OrderID:         pgtype.Int4{Int32: orderID, Valid: true},
+//             Points:          accrual,
+//             TransactionType: "accrual",
+//         }); err != nil {
+//             return fmt.Errorf("failed to create loyalty transaction: %w", err)
+//         }
+//     }
+
+//     return nil
+// }
 func (s *OrderService) UpdateOrder(ctx context.Context, orderNumber string, status string, accrual float64) error {
     // Обновляем статус и начисление заказа
     if err := s.repo.UpdateOrderStatus(ctx, db.UpdateOrderStatusParams{
