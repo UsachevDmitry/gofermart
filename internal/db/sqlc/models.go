@@ -34,6 +34,11 @@ type Order struct {
 	UploadedAt  pgtype.Timestamp `json:"uploaded_at"`
 }
 
+type SchemaMigration struct {
+	Version int64 `json:"version"`
+	Dirty   bool  `json:"dirty"`
+}
+
 type User struct {
 	ID       int32  `json:"id"`
 	Login    string `json:"login"`

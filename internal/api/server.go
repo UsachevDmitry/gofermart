@@ -6,15 +6,17 @@ import (
 	"middleware"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
+	"service"
 )
 
 type Server struct {
 	store *db.Store
 	router *gin.Engine
+	orderService *service.OrderService
 }
 
-func NewServer(store *db.Store) *Server {
-	server := &Server{store: store}
+func NewServer(store *db.Store, orderService *service.OrderService) *Server {
+	server := &Server{store: store, orderService: orderService}
 	router := gin.Default()
 
 	// Public routes (не требуют аутентификации)
