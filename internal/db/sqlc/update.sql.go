@@ -120,8 +120,8 @@ WHERE
 `
 
 type UpdateLoyaltyAccountBalanceParams struct {
-	CurrentBalance float64     `json:"current_balance"`
-	UserID         pgtype.Int4 `json:"user_id"`
+	CurrentBalance pgtype.Numeric `json:"current_balance"`
+	UserID         pgtype.Int4    `json:"user_id"`
 }
 
 func (q *Queries) UpdateLoyaltyAccountBalance(ctx context.Context, arg UpdateLoyaltyAccountBalanceParams) error {
@@ -148,4 +148,3 @@ func (q *Queries) UpdateOrderStatus(ctx context.Context, arg UpdateOrderStatusPa
 	_, err := q.db.Exec(ctx, updateOrderStatus, arg.Status, arg.Accrual, arg.OrderNumber)
 	return err
 }
-

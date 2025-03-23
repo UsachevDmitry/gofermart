@@ -22,6 +22,12 @@ type OrderService struct {
         }
     }
 
+func float64ToNumeric(f float64) (pgtype.Numeric, error) {
+    var numeric pgtype.Numeric
+    err := numeric.Scan(f)
+    return numeric, err
+}
+
 func (s *OrderService) UpdateOrder(ctx context.Context, orderNumber string, status string, accrual float64) error {
     // Обновляем статус и начисление заказа
     if err := s.repo.UpdateOrderStatus(ctx, db.UpdateOrderStatusParams{
@@ -41,8 +47,14 @@ func (s *OrderService) UpdateOrder(ctx context.Context, orderNumber string, stat
         }
 
         // Обновляем баланс пользователя
+        newAccrual, err := float64ToNumeric(accrual)
+        // if err != nil {
+        //     log.Printf("Failed to convert new current balance: %v", err)
+        //     ctx.JSON(http.StatusInternalServerError, gin.H{"error": "внутренняя ошибка сервера"}) // 500
+        //     return 
+        // }
         if err := s.repo.UpdateLoyaltyAccountBalance(ctx, db.UpdateLoyaltyAccountBalanceParams{
-            CurrentBalance: accrual,
+            CurrentBalance: newAccrual,
             UserID:         userID,
         }); err != nil {
             return fmt.Errorf("failed to update loyalty account balance: %w", err)

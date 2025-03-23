@@ -11,8 +11,8 @@ import (
 type LoyaltyAccount struct {
 	ID               int32            `json:"id"`
 	UserID           pgtype.Int4      `json:"user_id"`
-	CurrentBalance   float64          `json:"current_balance"`
-	WithdrawnBalance float64          `json:"withdrawn_balance"`
+	CurrentBalance   pgtype.Numeric   `json:"current_balance"`
+	WithdrawnBalance pgtype.Numeric   `json:"withdrawn_balance"`
 	UpdatedAt        pgtype.Timestamp `json:"updated_at"`
 }
 

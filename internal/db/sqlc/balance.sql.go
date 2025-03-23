@@ -35,8 +35,8 @@ LIMIT 1
 `
 
 type GetBalanceByUserIDRow struct {
-	CurrentBalance   float64 `json:"current_balance"`
-	WithdrawnBalance float64 `json:"withdrawn_balance"`
+	CurrentBalance   pgtype.Numeric `json:"current_balance"`
+	WithdrawnBalance pgtype.Numeric `json:"withdrawn_balance"`
 }
 
 func (q *Queries) GetBalanceByUserID(ctx context.Context, userID pgtype.Int4) (GetBalanceByUserIDRow, error) {
@@ -86,9 +86,9 @@ WHERE user_id = $1
 `
 
 type UpdateBalanceParams struct {
-	UserID           pgtype.Int4 `json:"user_id"`
-	CurrentBalance   float64     `json:"current_balance"`
-	WithdrawnBalance float64     `json:"withdrawn_balance"`
+	UserID           pgtype.Int4    `json:"user_id"`
+	CurrentBalance   pgtype.Numeric `json:"current_balance"`
+	WithdrawnBalance pgtype.Numeric `json:"withdrawn_balance"`
 }
 
 func (q *Queries) UpdateBalance(ctx context.Context, arg UpdateBalanceParams) error {
