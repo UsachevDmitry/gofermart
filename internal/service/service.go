@@ -6,10 +6,14 @@ import (
     db "db/sqlc"
 	"time"
     "github.com/jackc/pgx/v5/pgtype"
+    "encoding/json"
+    "net/http"
+    "utils"
 )
 
 type OrderService struct {
     repo *db.Store
+    AccrualSystemAddress *utils.Config
 }
 
 func NewOrderService(repo *db.Store) *OrderService {
@@ -100,17 +104,63 @@ func (s *OrderService) PollOrderStatus(orderNumber string) error {
     return fmt.Errorf("failed to process order %s after %d attempts", orderNumber, maxAttempts)
 }
 
-// fetchAccrualStatus запрашивает статус заказа у внешней системы.
+// // fetchAccrualStatus запрашивает статус заказа у внешней системы.
+// func (s *OrderService) fetchAccrualStatus(orderNumber string) (string, float64, error) {
+//     // Здесь должен быть код для запроса к внешней системе
+//     // Например, HTTP-запрос к ACCRUAL_SYSTEM_ADDRESS
+//     // В этом примере используется заглушка
+//     switch orderNumber {
+//     case "9278923470":
+//         return "PROCESSED", 500.0, nil
+//     case "12345678903":
+//         return "PROCESSING", 0, nil
+//     default:
+//         return "INVALID", 0, nil
+//     }
+// }
+
+type AccrualResponse struct {
+    Order   string  `json:"order"`
+    Status  string  `json:"status"`
+    Accrual float64 `json:"accrual,omitempty"`
+}
+
 func (s *OrderService) fetchAccrualStatus(orderNumber string) (string, float64, error) {
-    // Здесь должен быть код для запроса к внешней системе
-    // Например, HTTP-запрос к ACCRUAL_SYSTEM_ADDRESS
-    // В этом примере используется заглушка
-    switch orderNumber {
-    case "9278923470":
-        return "PROCESSED", 500.0, nil
-    case "12345678903":
-        return "PROCESSING", 0, nil
+    // Формируем URL для запроса
+    url := fmt.Sprintf("%s/api/orders/%s", s.AccrualSystemAddress, orderNumber)
+
+    // Создаем HTTP-клиент с таймаутом
+    client := &http.Client{
+        Timeout: 10 * time.Second,
+    }
+
+    // Выполняем GET-запрос
+    resp, err := client.Get(url)
+    if err != nil {
+        return "", 0, fmt.Errorf("failed to make request to accrual system: %w", err)
+    }
+    defer resp.Body.Close()
+
+    // Обрабатываем ответ
+    switch resp.StatusCode {
+    case http.StatusOK: // 200
+        var accrualResp AccrualResponse
+        if err := json.NewDecoder(resp.Body).Decode(&accrualResp); err != nil {
+            return "", 0, fmt.Errorf("failed to decode response: %w", err)
+        }
+        return accrualResp.Status, accrualResp.Accrual, nil
+
+    case http.StatusNoContent: // 204
+        return "REGISTERED", 0, nil
+
+    case http.StatusTooManyRequests: // 429
+        retryAfter := resp.Header.Get("Retry-After")
+        return "", 0, fmt.Errorf("rate limit exceeded, retry after %s seconds", retryAfter)
+
+    case http.StatusInternalServerError: // 500
+        return "", 0, fmt.Errorf("internal server error in accrual system")
+
     default:
-        return "INVALID", 0, nil
+        return "", 0, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
     }
 }

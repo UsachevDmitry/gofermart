@@ -81,6 +81,40 @@ type WithdrawRequest struct {
     Sum   float64 `json:"sum"`
 }
 
+// func (server *Server) getBalance(ctx *gin.Context) {
+//     // Проверка аутентификации
+//     login, exists := ctx.Get("login")
+//     if !exists {
+//         ctx.JSON(http.StatusUnauthorized, gin.H{"error": "пользователь не аутентифицирован"}) // 401
+//         return
+//     }
+
+//     // Получаем пользователя
+//     user, err := server.store.GetUser(ctx, login.(string))
+//     if err != nil {
+//         ctx.JSON(http.StatusInternalServerError, gin.H{"error": "внутренняя ошибка сервера"}) // 500
+//         return
+//     }
+
+//     // Преобразование userID в pgtype.Int4
+//     userIDInt4 := pgtype.Int4{Int32: user.ID, Valid: true}
+
+//     // Получаем данные о балансе пользователя
+//     balance, err := server.store.GetBalanceByUserID(ctx.Request.Context(), userIDInt4)
+//     if err != nil {
+//         ctx.JSON(http.StatusInternalServerError, gin.H{"error": "внутренняя ошибка сервера"}) // 500
+//         return
+//     }
+
+//     // Форматируем ответ
+//     response := BalanceResponse{
+//         Current:   balance.CurrentBalance,
+//         Withdrawn: balance.WithdrawnBalance,
+//     }
+
+//     // Возвращаем ответ
+//     ctx.JSON(http.StatusOK, response) // 200
+// }
 func (server *Server) getBalance(ctx *gin.Context) {
     // Проверка аутентификации
     login, exists := ctx.Get("login")
