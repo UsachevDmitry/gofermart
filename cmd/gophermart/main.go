@@ -43,7 +43,7 @@ func main() {
 
 	store := db.NewStore(pool)
 	// Инициализация сервиса
-	orderService := service.NewOrderService(store)
+	orderService := service.NewOrderService(store, &config)
 	server := api.NewServer(store, orderService)
 
 
