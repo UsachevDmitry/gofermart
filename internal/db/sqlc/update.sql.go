@@ -148,3 +148,4 @@ func (q *Queries) UpdateOrderStatus(ctx context.Context, arg UpdateOrderStatusPa
 	_, err := q.db.Exec(ctx, updateOrderStatus, arg.Status, arg.Accrual, arg.OrderNumber)
 	return err
 }
+
