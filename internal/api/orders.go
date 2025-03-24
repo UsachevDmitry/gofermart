@@ -53,6 +53,24 @@ func (server *Server) uploadOrder(ctx *gin.Context) {
         }
     }
 
+    // // Сохранение заказа в базу данных
+    // if err := server.store.SaveOrder(ctx, db.SaveOrderParams{
+    //     OrderNumber: string(orderNumber),
+    //     UserID:      userID,
+    //     Status:      "NEW",
+    //     Accrual:     pgtype.Float8{Float64: 0, Valid: true},
+    // }); err != nil {
+    //     ctx.JSON(http.StatusInternalServerError, gin.H{"error": "не удалось сохранить заказ"}) // 500
+    //     return
+    // }
+
+    // // Запуск фоновой задачи для опроса статуса заказа
+    // go func() {
+    //     if err := server.orderService.PollOrderStatus(string(orderNumber)); err != nil {
+    //         // Логируем ошибку
+    //         log.Printf("Failed to poll order status: %v\n", err)
+    //     }
+    // }()
     // Сохранение заказа в базу данных
     if err := server.store.SaveOrder(ctx, db.SaveOrderParams{
         OrderNumber: string(orderNumber),
@@ -64,11 +82,10 @@ func (server *Server) uploadOrder(ctx *gin.Context) {
         return
     }
 
-    // Запуск фоновой задачи для опроса статуса заказа
+    // Используем OrderService для обработки заказа
     go func() {
         if err := server.orderService.PollOrderStatus(string(orderNumber)); err != nil {
-            // Логируем ошибку
-            log.Printf("Failed to poll order status: %v\n", err)
+            log.Printf("Failed to process order %s: %v\n", string(orderNumber), err)
         }
     }()
 
