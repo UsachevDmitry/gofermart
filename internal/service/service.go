@@ -198,11 +198,40 @@ func (s *OrderService) fetchAccrualStatus(ctx context.Context, orderNumber strin
 //     return totalAccrual - totalWithdrawn, totalWithdrawn, nil
 // }
 
+// func (s *OrderService) GetUserBalance(ctx context.Context, userID int32) (current, withdrawn float64, err error) {
+//     // Получаем текущий баланс из начисленных заказов
+//     processedOrders, err := s.repo.GetProcessedOrdersByUserID(ctx, pgtype.Int4{Int32: userID, Valid: true})
+//     if err != nil {
+//         return 0, 0, fmt.Errorf("failed to get processed orders: %w", err)
+//     }
+
+//     // Считаем общее начисление
+//     var totalAccrual float64
+//     for _, order := range processedOrders {
+//         if order.Accrual.Valid {
+//             totalAccrual += order.Accrual.Float64
+//         }
+//     }
+
+//     // Получаем сумму списаний
+//     withdrawals, err := s.repo.GetWithdrawalsByUserID(ctx, pgtype.Int4{Int32: userID, Valid: true})
+//     if err != nil {
+//         return 0, 0, fmt.Errorf("failed to get withdrawals: %w", err)
+//     }
+
+//     var totalWithdrawn float64
+//     for _, w := range withdrawals {
+//         totalWithdrawn += w.Sum
+//     }
+
+//     return totalAccrual - totalWithdrawn, totalWithdrawn, nil
+// }
+
 func (s *OrderService) GetUserBalance(ctx context.Context, userID int32) (current, withdrawn float64, err error) {
-    // Получаем текущий баланс из начисленных заказов
+    // Получаем все PROCESSED заказы пользователя
     processedOrders, err := s.repo.GetProcessedOrdersByUserID(ctx, pgtype.Int4{Int32: userID, Valid: true})
     if err != nil {
-        return 0, 0, fmt.Errorf("failed to get processed orders: %w", err)
+        return 1, 1, fmt.Errorf("failed to get processed orders: %w", err)
     }
 
     // Считаем общее начисление
@@ -213,17 +242,20 @@ func (s *OrderService) GetUserBalance(ctx context.Context, userID int32) (curren
         }
     }
 
-    // Получаем сумму списаний
+    // Получаем все списания пользователя
     withdrawals, err := s.repo.GetWithdrawalsByUserID(ctx, pgtype.Int4{Int32: userID, Valid: true})
     if err != nil {
         return 0, 0, fmt.Errorf("failed to get withdrawals: %w", err)
     }
 
+    // Считаем общую сумму списаний
     var totalWithdrawn float64
     for _, w := range withdrawals {
         totalWithdrawn += w.Sum
     }
 
+    // Текущий баланс = начисления - списания
+    // Списанная сумма = totalWithdrawn
     return totalAccrual - totalWithdrawn, totalWithdrawn, nil
 }
 

@@ -101,42 +101,86 @@ func float64ToNumeric(f float64) (pgtype.Numeric, error) {
 //     }) // 200
 // }
 
+// func (s *Server) getBalance(ctx *gin.Context) {
+//     // Проверка аутентификации
+//     login, exists := ctx.Get("login")
+//     if !exists {
+//         ctx.JSON(http.StatusUnauthorized, gin.H{"error": "пользователь не аутентифицирован"})
+//         return
+//     }
+
+//     // Получаем пользователя
+//     user, err := s.store.GetUser(ctx, login.(string))
+//     if err != nil {
+//         if errors.Is(err, sql.ErrNoRows) {
+//             ctx.JSON(http.StatusUnauthorized, gin.H{"error": "пользователь не найден"})
+//         } else {
+//             ctx.JSON(http.StatusInternalServerError, gin.H{"error": "внутренняя ошибка сервера"})
+//         }
+//         return
+//     }
+
+//     // Получаем баланс через OrderService
+//     current, withdrawn, err := s.orderService.GetUserBalance(ctx.Request.Context(), user.ID)
+//     if err != nil {
+//         ctx.JSON(http.StatusInternalServerError, gin.H{"error": "не удалось получить баланс"})
+//         return
+//     }
+
+//     // Преобразуем float64 в pgtype.Numeric для ответа
+//     currentNumeric, err := float64ToNumeric(current)
+//     if err != nil {
+//         ctx.JSON(http.StatusInternalServerError, gin.H{"error": "внутренняя ошибка сервера"})
+//         return
+//     }
+
+//     withdrawnNumeric, err := float64ToNumeric(withdrawn)
+//     if err != nil {
+//         ctx.JSON(http.StatusInternalServerError, gin.H{"error": "внутренняя ошибка сервера"})
+//         return
+//     }
+
+//     ctx.JSON(http.StatusOK, BalanceResponse{
+//         Current:   currentNumeric,
+//         Withdrawn: withdrawnNumeric,
+//     })
+// }
+
 func (s *Server) getBalance(ctx *gin.Context) {
     // Проверка аутентификации
     login, exists := ctx.Get("login")
     if !exists {
-        ctx.JSON(http.StatusUnauthorized, gin.H{"error": "пользователь не аутентифицирован"})
+        ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
         return
     }
 
     // Получаем пользователя
     user, err := s.store.GetUser(ctx, login.(string))
     if err != nil {
-        if errors.Is(err, sql.ErrNoRows) {
-            ctx.JSON(http.StatusUnauthorized, gin.H{"error": "пользователь не найден"})
-        } else {
-            ctx.JSON(http.StatusInternalServerError, gin.H{"error": "внутренняя ошибка сервера"})
-        }
+        ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
         return
     }
 
-    // Получаем баланс через OrderService
+    // Получаем баланс
     current, withdrawn, err := s.orderService.GetUserBalance(ctx.Request.Context(), user.ID)
     if err != nil {
-        ctx.JSON(http.StatusInternalServerError, gin.H{"error": "не удалось получить баланс"})
+        log.Printf("GetUserBalance error: %v", err)
+        ctx.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
         return
     }
 
-    // Преобразуем float64 в pgtype.Numeric для ответа
+    // Преобразуем в Numeric
     currentNumeric, err := float64ToNumeric(current)
     if err != nil {
-        ctx.JSON(http.StatusInternalServerError, gin.H{"error": "внутренняя ошибка сервера"})
+        log.Printf("float64ToNumeric error (current): %v", err)
+        ctx.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
         return
     }
 
     withdrawnNumeric, err := float64ToNumeric(withdrawn)
     if err != nil {
-        ctx.JSON(http.StatusInternalServerError, gin.H{"error": "внутренняя ошибка сервера"})
+        log.Printf("float64ToNumeric error (withdrawn): %v", err)
+        ctx.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
         return
     }
 
