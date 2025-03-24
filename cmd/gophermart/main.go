@@ -53,9 +53,9 @@ func main() {
 
 
 
-	// // Создаем и запускаем worker
-	// worker := NewWorker(pool)
-	// go worker.Start(1 * time.Second) // Обновление каждые 1 секунду
+	// Создаем и запускаем worker
+	worker := NewWorker(pool)
+	go worker.Start(1 * time.Second) // Обновление каждые 1 секунду
 
 	err = server.Start(config.ServerAddress) //serverAddress
 	if err != nil {
@@ -236,3 +236,4 @@ func (w *Worker) getAccrualForOrder(orderNumber string) (float64, error) {
 		return 0, fmt.Errorf("неожиданный статус ответа: %s", resp.Status)
 	}
 }
+
