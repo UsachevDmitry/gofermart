@@ -175,7 +175,7 @@ func (s *OrderService) GetUserBalance(ctx context.Context, userID int32) (curren
     // Получаем все PROCESSED заказы пользователя
     processedOrders, err := s.repo.GetProcessedOrdersByUserID(ctx, pgtype.Int4{Int32: userID, Valid: true})
     if err != nil {
-        return 0, 0, fmt.Errorf("failed to get processed orders: %w", err)
+        return 1, 1, fmt.Errorf("failed to get processed orders: %w", err)
     }
 
     // Считаем общее начисление
