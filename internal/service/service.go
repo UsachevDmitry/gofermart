@@ -189,7 +189,7 @@ func (s *OrderService) GetUserBalance(ctx context.Context, userID int32) (curren
     // Получаем все списания пользователя
     withdrawals, err := s.repo.GetWithdrawalsByUserID(ctx, pgtype.Int4{Int32: userID, Valid: true})
     if err != nil {
-        return 0, 0, fmt.Errorf("failed to get withdrawals: %w", err)
+        return 2, 2, fmt.Errorf("failed to get withdrawals: %w", err)
     }
 
     // Считаем общую сумму списаний
