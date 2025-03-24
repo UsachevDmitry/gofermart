@@ -47,14 +47,20 @@ func (q *Queries) GetBalanceByUserID(ctx context.Context, userID pgtype.Int4) (G
 }
 
 const getWithdrawalsByUserID = `-- name: GetWithdrawalsByUserID :many
-SELECT order_number, sum, processed_at
+SELECT 
+    order_number, 
+    user_id, 
+    sum, 
+    processed_at
 FROM withdrawals
-WHERE user_id = $1
+WHERE 
+    user_id = $1
 ORDER BY processed_at DESC
 `
 
 type GetWithdrawalsByUserIDRow struct {
 	OrderNumber string           `json:"order_number"`
+	UserID      pgtype.Int4      `json:"user_id"`
 	Sum         float64          `json:"sum"`
 	ProcessedAt pgtype.Timestamp `json:"processed_at"`
 }
@@ -68,7 +74,12 @@ func (q *Queries) GetWithdrawalsByUserID(ctx context.Context, userID pgtype.Int4
 	items := []GetWithdrawalsByUserIDRow{}
 	for rows.Next() {
 		var i GetWithdrawalsByUserIDRow
-		if err := rows.Scan(&i.OrderNumber, &i.Sum, &i.ProcessedAt); err != nil {
+		if err := rows.Scan(
+			&i.OrderNumber,
+			&i.UserID,
+			&i.Sum,
+			&i.ProcessedAt,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

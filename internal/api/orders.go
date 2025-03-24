@@ -144,3 +144,6 @@ func (server *Server) getOrders(ctx *gin.Context) {
     // Возвращаем ответ
     ctx.JSON(http.StatusOK, response) // 200
 }
+
+
+

@@ -9,18 +9,19 @@ import (
     "encoding/json"
     "net/http"
     "utils"
+    "errors"
 )
 
 type OrderService struct {
     repo *db.Store
     config *utils.Config }
 
-    func NewOrderService(repo *db.Store, config *utils.Config) *OrderService {
-        return &OrderService{
-            repo:   repo,
-            config: config,
-        }
+func NewOrderService(repo *db.Store, config *utils.Config) *OrderService {
+    return &OrderService{
+        repo:   repo,
+        config: config,
     }
+}
 
 func float64ToNumeric(f float64) (pgtype.Numeric, error) {
     var numeric pgtype.Numeric
@@ -168,4 +169,73 @@ func (s *OrderService) fetchAccrualStatus(ctx context.Context, orderNumber strin
     default:
         return "", 0, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
     }
+}
+
+func (s *OrderService) GetUserBalance(ctx context.Context, userID int32) (current, withdrawn float64, err error) {
+    // Получаем текущий баланс из начисленных заказов
+    processedOrders, err := s.repo.GetProcessedOrdersByUserID(ctx, pgtype.Int4{Int32: userID, Valid: true})
+    if err != nil {
+        return 0, 0, fmt.Errorf("failed to get processed orders: %w", err)
+    }
+
+    // Считаем общее начисление
+    var totalAccrual float64
+    for _, order := range processedOrders {
+        totalAccrual += order.Accrual.Float64
+    }
+
+    // Получаем сумму списаний
+    withdrawals, err := s.repo.GetWithdrawalsByUserID(ctx, pgtype.Int4{Int32: userID, Valid: true})
+    if err != nil {
+        return 0, 0, fmt.Errorf("failed to get withdrawals: %w", err)
+    }
+
+    var totalWithdrawn float64
+    for _, w := range withdrawals {
+        totalWithdrawn += w.Sum
+    }
+
+    return totalAccrual - totalWithdrawn, totalWithdrawn, nil
+}
+
+func (s *OrderService) Withdraw(ctx context.Context, userID int32, orderNumber string, sum float64) error {
+    // Проверяем баланс
+    current, _, err := s.GetUserBalance(ctx, userID)
+    if err != nil {
+        return fmt.Errorf("failed to check balance: %w", err)
+    }
+
+    if current < sum {
+        return errors.New("insufficient funds")
+    }
+
+    // Создаем запись о списании
+    err = s.repo.CreateWithdrawal(ctx, db.CreateWithdrawalParams{
+        UserID:      pgtype.Int4{Int32: userID, Valid: true},
+        OrderNumber: orderNumber,
+        Sum:         sum,
+    })
+    if err != nil {
+        return fmt.Errorf("failed to create withdrawal: %w", err)
+    }
+
+    return nil
+}
+
+func (s *OrderService) GetUserWithdrawals(ctx context.Context, userID int32) ([]db.Withdrawal, error) {
+    rows, err := s.repo.GetWithdrawalsByUserID(ctx, pgtype.Int4{Int32: userID, Valid: true})
+    if err != nil {
+        return nil, err
+    }
+
+    withdrawals := make([]db.Withdrawal, len(rows))
+    for i, row := range rows {
+        withdrawals[i] = db.Withdrawal{
+            OrderNumber: row.OrderNumber,
+            UserID:      row.UserID,
+            Sum:         row.Sum,
+            ProcessedAt: row.ProcessedAt,
+        }
+    }
+    return withdrawals, nil
 }

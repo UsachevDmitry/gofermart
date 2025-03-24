@@ -80,6 +80,54 @@ func (q *Queries) GetOrderOwner(ctx context.Context, orderNumber string) (pgtype
 	return user_id, err
 }
 
+const getProcessedOrdersByUserID = `-- name: GetProcessedOrdersByUserID :many
+SELECT 
+    order_number, 
+    user_id, 
+    status, 
+    accrual, 
+    uploaded_at
+FROM orders
+WHERE 
+    user_id = $1 AND 
+    status = 'PROCESSED'
+ORDER BY uploaded_at DESC
+`
+
+type GetProcessedOrdersByUserIDRow struct {
+	OrderNumber string           `json:"order_number"`
+	UserID      pgtype.Int4      `json:"user_id"`
+	Status      string           `json:"status"`
+	Accrual     pgtype.Float8    `json:"accrual"`
+	UploadedAt  pgtype.Timestamp `json:"uploaded_at"`
+}
+
+func (q *Queries) GetProcessedOrdersByUserID(ctx context.Context, userID pgtype.Int4) ([]GetProcessedOrdersByUserIDRow, error) {
+	rows, err := q.db.Query(ctx, getProcessedOrdersByUserID, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetProcessedOrdersByUserIDRow{}
+	for rows.Next() {
+		var i GetProcessedOrdersByUserIDRow
+		if err := rows.Scan(
+			&i.OrderNumber,
+			&i.UserID,
+			&i.Status,
+			&i.Accrual,
+			&i.UploadedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const saveOrder = `-- name: SaveOrder :exec
 INSERT INTO orders (
     user_id,

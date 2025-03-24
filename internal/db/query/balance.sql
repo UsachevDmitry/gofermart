@@ -14,7 +14,12 @@ SET current_balance = $2, withdrawn_balance = $3
 WHERE user_id = $1;
 
 -- name: GetWithdrawalsByUserID :many
-SELECT order_number, sum, processed_at
+SELECT 
+    order_number, 
+    user_id, 
+    sum, 
+    processed_at
 FROM withdrawals
-WHERE user_id = $1
+WHERE 
+    user_id = $1
 ORDER BY processed_at DESC;
