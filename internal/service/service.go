@@ -171,6 +171,33 @@ func (s *OrderService) fetchAccrualStatus(ctx context.Context, orderNumber strin
     }
 }
 
+// func (s *OrderService) GetUserBalance(ctx context.Context, userID int32) (current, withdrawn float64, err error) {
+//     // Получаем текущий баланс из начисленных заказов
+//     processedOrders, err := s.repo.GetProcessedOrdersByUserID(ctx, pgtype.Int4{Int32: userID, Valid: true})
+//     if err != nil {
+//         return 0, 0, fmt.Errorf("failed to get processed orders: %w", err)
+//     }
+
+//     // Считаем общее начисление
+//     var totalAccrual float64
+//     for _, order := range processedOrders {
+//         totalAccrual += order.Accrual.Float64
+//     }
+
+//     // Получаем сумму списаний
+//     withdrawals, err := s.repo.GetWithdrawalsByUserID(ctx, pgtype.Int4{Int32: userID, Valid: true})
+//     if err != nil {
+//         return 0, 0, fmt.Errorf("failed to get withdrawals: %w", err)
+//     }
+
+//     var totalWithdrawn float64
+//     for _, w := range withdrawals {
+//         totalWithdrawn += w.Sum
+//     }
+
+//     return totalAccrual - totalWithdrawn, totalWithdrawn, nil
+// }
+
 func (s *OrderService) GetUserBalance(ctx context.Context, userID int32) (current, withdrawn float64, err error) {
     // Получаем текущий баланс из начисленных заказов
     processedOrders, err := s.repo.GetProcessedOrdersByUserID(ctx, pgtype.Int4{Int32: userID, Valid: true})
@@ -181,7 +208,9 @@ func (s *OrderService) GetUserBalance(ctx context.Context, userID int32) (curren
     // Считаем общее начисление
     var totalAccrual float64
     for _, order := range processedOrders {
-        totalAccrual += order.Accrual.Float64
+        if order.Accrual.Valid {
+            totalAccrual += order.Accrual.Float64
+        }
     }
 
     // Получаем сумму списаний
