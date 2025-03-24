@@ -1,7 +1,7 @@
 package api
 
 import (
-    "database/sql"
+    //"database/sql"
     "errors"
     "log"
     // "math/big"
