@@ -1,10 +1,10 @@
 package api
 
 import (
-    //"database/sql"
+    "database/sql"
     "errors"
     "log"
-    "math/big"
+    // "math/big"
     "net/http"
     "time"
 
@@ -101,77 +101,50 @@ func float64ToNumeric(f float64) (pgtype.Numeric, error) {
 //     }) // 200
 // }
 
-// 
-
 func (s *Server) getBalance(ctx *gin.Context) {
     // Проверка аутентификации
     login, exists := ctx.Get("login")
     if !exists {
-        ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+        ctx.JSON(http.StatusUnauthorized, gin.H{"error": "пользователь не аутентифицирован"})
         return
     }
 
+    // Получаем пользователя
     user, err := s.store.GetUser(ctx, login.(string))
     if err != nil {
-        ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+        if errors.Is(err, sql.ErrNoRows) {
+            ctx.JSON(http.StatusUnauthorized, gin.H{"error": "пользователь не найден"})
+        } else {
+            ctx.JSON(http.StatusInternalServerError, gin.H{"error": "внутренняя ошибка сервера"})
+        }
         return
     }
 
-    current, withdrawn, err := s.orderService.GetUserBalance(ctx, user.ID)
+    // Получаем баланс через OrderService
+    current, withdrawn, err := s.orderService.GetUserBalance(ctx.Request.Context(), user.ID)
     if err != nil {
-        ctx.JSON(http.StatusOK, BalanceResponse{
-            Current:   pgtype.Numeric{Int: big.NewInt(0), Valid: true},
-            Withdrawn: pgtype.Numeric{Int: big.NewInt(0), Valid: true},
-        })
+        ctx.JSON(http.StatusInternalServerError, gin.H{"error": "не удалось получить баланс"})
         return
     }
 
-    currentNumeric, _ := float64ToNumeric(current)
-    withdrawnNumeric, _ := float64ToNumeric(withdrawn)
+    // Преобразуем float64 в pgtype.Numeric для ответа
+    currentNumeric, err := float64ToNumeric(current)
+    if err != nil {
+        ctx.JSON(http.StatusInternalServerError, gin.H{"error": "внутренняя ошибка сервера"})
+        return
+    }
+
+    withdrawnNumeric, err := float64ToNumeric(withdrawn)
+    if err != nil {
+        ctx.JSON(http.StatusInternalServerError, gin.H{"error": "внутренняя ошибка сервера"})
+        return
+    }
 
     ctx.JSON(http.StatusOK, BalanceResponse{
         Current:   currentNumeric,
         Withdrawn: withdrawnNumeric,
     })
 }
-
-// func (s *Server) getWithdrawals(ctx *gin.Context) {
-//     login, exists := ctx.Get("login")
-//     if !exists {
-//         ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-//         return
-//     }
-
-//     user, err := s.store.GetUser(ctx, login.(string))
-//     if err != nil {
-//         ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-//         return
-//     }
-
-//     withdrawals, err := s.orderService.GetUserWithdrawals(ctx, user.ID)
-//     if err != nil {
-//         ctx.JSON(http.StatusOK, []WithdrawalResponse{})
-//         return
-//     }
-
-//     if len(withdrawals) == 0 {
-//         ctx.Status(http.StatusNoContent)
-//         return
-//     }
-
-//     var response []WithdrawalResponse
-//     for _, w := range withdrawals {
-//         sumNumeric, _ := float64ToNumeric(w.Sum)
-//         response = append(response, WithdrawalResponse{
-//             Order:       w.OrderNumber,
-//             Sum:         sumNumeric,
-//             ProcessedAt: w.ProcessedAt.Time,
-//         })
-//     }
-
-//     ctx.JSON(http.StatusOK, response)
-// }
-
 
 func (s *Server) withdrawBalance(ctx *gin.Context) {
     // Проверка аутентификации
