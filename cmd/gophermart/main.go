@@ -489,7 +489,6 @@ import (
 	"errors"
 	"encoding/json"
 	"io"
-	"os"
 )
 
 func main() {
@@ -512,11 +511,7 @@ func main() {
 
 	worker := NewWorker(pool)
 	
-	if os.Getenv("TEST_MODE") == "true" {
-		go worker.Start(5 * time.Second)
-	} else {
-		go worker.Start(3 * time.Second)
-	}
+	go worker.Start(3 * time.Second)
 
 	err = server.Start(config.ServerAddress)
 	if err != nil {
