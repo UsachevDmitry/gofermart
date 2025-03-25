@@ -55,7 +55,7 @@ func main() {
 
 	// Создаем и запускаем worker
 	worker := NewWorker(pool)
-	go worker.Start(1 * time.Second) // Обновление каждые 1 секунду
+	go worker.Start(3 * time.Second) // Обновление каждые 3 секунду
 
 	err = server.Start(config.ServerAddress) //serverAddress
 	if err != nil {
@@ -77,12 +77,12 @@ func (w *Worker) Start(interval time.Duration) {
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
-	for {
-		select {
-		case <-ticker.C:
+	  
+		  
+	for range ticker.C{
 			w.UpdateBalances()
 		}
-		}
+   
 }
 
 // UpdateBalances обновляет балансы всех пользователей
