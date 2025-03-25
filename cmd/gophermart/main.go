@@ -55,7 +55,7 @@ func main() {
 
 	// Создаем и запускаем worker
 	worker := NewWorker(pool)
-	go worker.Start(2 * time.Second) // Обновление каждые 1 секунду
+	go worker.Start(3 * time.Second) // Обновление каждые 3 секунду
 
 	err = server.Start(config.ServerAddress) //serverAddress
 	if err != nil {
