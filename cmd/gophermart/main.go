@@ -55,7 +55,7 @@ func main() {
 
 	// Создаем и запускаем worker
 	worker := NewWorker(pool)
-	go worker.Start(3 * time.Second) // Обновление каждые 3 секунду
+	go worker.Start(1 * time.Second) // Обновление каждые 1 секунду
 
 	err = server.Start(config.ServerAddress) //serverAddress
 	if err != nil {
@@ -77,8 +77,11 @@ func (w *Worker) Start(interval time.Duration) {
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
-	for range ticker.C{
+	for {
+		select {
+		case <-ticker.C:
 			w.UpdateBalances()
+		}
 		}
 }
 
@@ -233,4 +236,3 @@ func (w *Worker) getAccrualForOrder(orderNumber string) (float64, error) {
 		return 0, fmt.Errorf("неожиданный статус ответа: %s", resp.Status)
 	}
 }
-
