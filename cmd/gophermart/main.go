@@ -511,7 +511,7 @@ func main() {
 
 	worker := NewWorker(pool)
 	
-	go worker.Start(3 * time.Second)
+	go worker.Start(1 * time.Second)
 
 	err = server.Start(config.ServerAddress)
 	if err != nil {
