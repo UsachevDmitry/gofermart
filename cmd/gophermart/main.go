@@ -77,11 +77,8 @@ func (w *Worker) Start(interval time.Duration) {
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
-	for {
-		select {
-		case <-ticker.C:
+	for range ticker.C{
 			w.UpdateBalances()
-		}
 		}
 }
 
