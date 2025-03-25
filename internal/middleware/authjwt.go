@@ -6,8 +6,6 @@ import (
     "utils"
 )
 
-//var jwtSecret = []byte("secret-key")
-
 func AuthMiddleware() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		// Получаем токен из cookie

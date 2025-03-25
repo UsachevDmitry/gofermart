@@ -238,4 +238,3 @@ func (s *OrderService) GetUserWithdrawals(ctx context.Context, userID int32) ([]
     
     return result, nil
 }
-

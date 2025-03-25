@@ -51,11 +51,11 @@ func (server *Server) uploadOrder(ctx *gin.Context) {
 		}
 	}
 
-	// Сохраняем заказ со статусом REGISTERED
+	// Сохраняем заказ со статусом NEW
 	if err := server.store.SaveOrder(ctx, db.SaveOrderParams{
 		OrderNumber: string(orderNumber),
 		UserID:      userID,
-		Status:      "NEW", // Соответствует "REGISTERED" из теста//Status:      "REGISTERED", // Устанавливаем начальный статус
+		Status:      "NEW",
 		Accrual:     pgtype.Float8{Valid: false},
 	}); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "не удалось сохранить заказ"})
