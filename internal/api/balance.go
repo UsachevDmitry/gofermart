@@ -84,7 +84,8 @@ func (s *Server) getBalance(ctx *gin.Context) {
     // Преобразуем float64 в pgtype.Numeric для ответа
     currentNumeric, err := float64ToNumeric(current)
     if err != nil {
-        log.Printf("Failed currentNumeric to float64ToNumeric: %v", err)
+        log.Printf("Failed currentNumeric %#v to float64ToNumeric: %v",current, err)
+
         ctx.JSON(http.StatusInternalServerError, gin.H{"error": "внутренняя ошибка сервера"})
         return
     }
