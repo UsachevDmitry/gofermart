@@ -200,9 +200,9 @@ func (w *Worker) getAccrualForOrder(orderNumber string) (float64, error) {
 
 		// Проверяем статус заказа
 		switch accrualResp.Status {
-		case "NEW", "PROCESSED":
+		case "PROCESSED", "REGISTERED", "PROCESSING":
 			return accrualResp.Accrual, nil
-		case "INVALID", "REGISTERED", "PROCESSING":
+		case "INVALID":
 			return 0, nil
 		default:
 			return 0, fmt.Errorf("неизвестный статус заказа: %s", accrualResp.Status)
