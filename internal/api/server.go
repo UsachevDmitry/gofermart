@@ -2,16 +2,16 @@ package api
 
 import (
 	db "db/sqlc"
-	"net/http"
-	"middleware"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
+	"middleware"
+	"net/http"
 	"service"
 )
 
 type Server struct {
-	store *db.Store
-	router *gin.Engine
+	store        *db.Store
+	router       *gin.Engine
 	orderService *service.OrderService
 }
 

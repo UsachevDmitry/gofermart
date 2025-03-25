@@ -49,11 +49,6 @@ func (s *OrderService) UpdateOrder(ctx context.Context, orderNumber string, stat
 
         // Обновляем баланс пользователя
         newAccrual, _ := float64ToNumeric(accrual)
-        // if err != nil {
-        //     log.Printf("Failed to convert new current balance: %v", err)
-        //     ctx.JSON(http.StatusInternalServerError, gin.H{"error": "внутренняя ошибка сервера"}) // 500
-        //     return 
-        // }
         if err := s.repo.UpdateLoyaltyAccountBalance(ctx, db.UpdateLoyaltyAccountBalanceParams{
             CurrentBalance: newAccrual,
             UserID:         userID,

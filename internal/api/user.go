@@ -3,18 +3,18 @@ package api
 import (
 	db "db/sqlc"
 	"errors"
-	"net/http"
-	"utils"
-	"log"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgconn"
-	//"github.com/jackc/pgx/v5/pgtype"
+	"log"
+	"net/http"
+	"utils"
 )
 
 type createUserRequest struct {
-	Login        string `json:"login"`
-	Password     string `json:"password"`
+	Login    string `json:"login"`
+	Password string `json:"password"`
 }
+
 func (server *Server) CreateUser(ctx *gin.Context) {
 	var req createUserRequest
 
