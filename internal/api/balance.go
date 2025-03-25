@@ -1,17 +1,20 @@
 package api
 
 import (
-    "database/sql"
-    "errors"
-    "log"
-    // "math/big"
-    "net/http"
-    "time"
+	"database/sql"
+	"errors"
+	"fmt"
+	"log"
 
-    "github.com/gin-gonic/gin"
-    "github.com/jackc/pgx/v5/pgtype"
-    //db "db/sqlc"
-    "utils"
+	// "math/big"
+	"net/http"
+	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgtype"
+
+	//db "db/sqlc"
+	"utils"
 )
 
 type BalanceResponse struct {
@@ -49,7 +52,7 @@ func numericToFloat64(n pgtype.Numeric) (float64, error) {
 // Преобразует float64 в pgtype.Numeric
 func float64ToNumeric(f float64) (pgtype.Numeric, error) {
     var numeric pgtype.Numeric
-    err := numeric.Scan(f)
+    err := numeric.Scan(fmt.Sprintf("%f",f))
     return numeric, err
 }
 
