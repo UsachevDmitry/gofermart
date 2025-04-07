@@ -28,6 +28,12 @@ type WithdrawalResponse struct {
 	ProcessedAt time.Time      `json:"processed_at"`
 }
 
+type serviceError string
+
+func (e serviceError) Error() string { return string(e) }
+
+const ErrInsufficientFunds = serviceError("insufficient funds")
+
 // Преобразует pgtype.Numeric в float64
 func numericToFloat64(n pgtype.Numeric) (float64, error) {
 	if !n.Valid {
@@ -136,9 +142,20 @@ func (s *Server) withdrawBalance(ctx *gin.Context) {
 		return
 	}
 
+	// // Выполняем списание через OrderService
+	// if err := s.orderService.Withdraw(ctx.Request.Context(), user.ID, req.Order, sum); err != nil {
+	// 	if err.Error() == "insufficient funds" {
+	// 		ctx.JSON(http.StatusPaymentRequired, gin.H{"error": "недостаточно средств"}) // 402
+	// 	} else {
+	// 		log.Printf("Failed to withdraw: %v", err)
+	// 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "не удалось выполнить списание"}) // 500
+	// 	}
+	// 	return
+	// }
+	
 	// Выполняем списание через OrderService
 	if err := s.orderService.Withdraw(ctx.Request.Context(), user.ID, req.Order, sum); err != nil {
-		if err.Error() == "insufficient funds" {
+		if errors.Is(err, ErrInsufficientFunds) {
 			ctx.JSON(http.StatusPaymentRequired, gin.H{"error": "недостаточно средств"}) // 402
 		} else {
 			log.Printf("Failed to withdraw: %v", err)
@@ -146,6 +163,8 @@ func (s *Server) withdrawBalance(ctx *gin.Context) {
 		}
 		return
 	}
+
+
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "списание выполнено успешно"}) // 200
 }
