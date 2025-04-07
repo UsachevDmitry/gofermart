@@ -11,13 +11,21 @@ type Config struct {
 	AccrualSystemAddress string `mapstructure:"ACCRUAL_SYSTEM_ADDRESS"` // Адрес системы расчёта начислений
 }
 
-// type AccrualOrderResponse struct {
-//     Order   string  `json:"order"`
-//     Status  string  `json:"status"`
-//     Accrual float64 `json:"accrual,omitempty"`
-// }
+
 
 func LoadConfig(path string) (config Config, err error) {
+	// // Чтение конфигурации из файла
+	// viper.AddConfigPath(path)
+	// viper.SetConfigName("app")
+	// viper.SetConfigType("env")
+
+    // // Чтение конфигурации из файла
+	// err = viper.ReadInConfig()
+	// if err != nil {
+	// 	return
+	// }
+
+
 	// Чтение переменных окружения
 	viper.AutomaticEnv()
 

@@ -33,8 +33,10 @@ sqlc:
     sqlc generate
 
 # Testing code
+# test:
+#     go test -v -cover -count=1 -timeout 180s ./...
 test:
-    go test -v -cover -count=1 -timeout 180s ./db/...
+    find ./../.. -name "*_test.go" -exec dirname {} \; | sort -u | xargs -I{} sh -c 'echo "\033[1;34mTesting {}\033[0m..." && (cd {} && go test -cover)'
     
 # Apply migration to create tables app1
 migrateapp1up:

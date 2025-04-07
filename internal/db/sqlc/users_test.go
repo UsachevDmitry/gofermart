@@ -1,35 +1,54 @@
+
 package db
 
 import (
-	"fmt"
-	// "log"
-	// "os"
+	"context"
+	"math/rand"
 	"testing"
-    //"github.com/jackc/pgx/v5"
+	"github.com/stretchr/testify/require"
 )
 
-// const (
-// 	dbDriver = "postgres"
-// 	dbSource = "postgresql://postgres:postgres@localhost:5432/gophermart?sslmode=disable"
-// )
-
-// var ctx =context.Background()
-
-// var testQueries *Queries
-
-// func TestMain(m *testing.M) {
-// 	conn, err := pgx.Connect(ctx, dbSource)
-// 	if err != nil {
-// 		log.Fatal("can not connect to db")
-// 	}
-// 	defer conn.Close(ctx)
-
-// 	testQueries = New(conn)
-
-// 	os.Exit(m.Run())
-
-// }
 
 func TestCreateUser(t *testing.T) {
-	fmt.Println("Run test")
+	createRandomUser(t)
+}
+
+func TestGetUser(t *testing.T) {
+	user1 := createRandomUser(t)
+	user2, err := testQueries.GetUser(context.Background(), user1.Login)
+
+	require.NoError(t, err)
+	require.NotEmpty(t, user2)
+
+	require.Equal(t, user1.ID, user2.ID)
+	require.Equal(t, user1.Login, user2.Login)
+	require.Equal(t, user1.Password, user2.Password)
+}
+
+// Вспомогательная функция для генерации случайных строк
+func generateRandomString(n int) string {
+	const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(b)
+}
+
+func createRandomUser(t *testing.T) User {
+	arg := CreateUserParams{
+		Login:    generateRandomString(10),
+		Password: generateRandomString(12),
+	}
+
+	user, err := testQueries.CreateUser(context.Background(), arg)
+
+	require.NoError(t, err)
+	require.NotEmpty(t, user)
+
+	require.Equal(t, arg.Login, user.Login)
+	require.Equal(t, arg.Password, user.Password)
+	require.NotZero(t, user.ID)
+
+	return user
 }
