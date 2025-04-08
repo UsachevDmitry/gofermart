@@ -57,3 +57,10 @@ VALUES (
 SELECT user_id FROM loyalty_accounts
 WHERE user_id = $1
 FOR UPDATE;
+
+-- name: UpdateBalanceAfterWithdrawal :exec
+UPDATE loyalty_accounts
+SET 
+    current_balance = current_balance - $2,
+    withdrawn_balance = withdrawn_balance + $2
+WHERE user_id = $1;

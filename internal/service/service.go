@@ -271,13 +271,13 @@ func (s *OrderService) Withdraw(ctx context.Context, userID int32, orderNumber s
     }
 
     return s.repo.ExecTx(ctx, func(q *db.Queries) error {
-        // 1. Добавляем блокировку аккаунта
+        // 1. Блокируем аккаунт для обновления
         _, err := q.GetLoyaltyAccountForUpdate(ctx, pgtype.Int4{Int32: userID, Valid: true})
         if err != nil {
             return fmt.Errorf("failed to lock account: %w", err)
         }
         
-        // 2. Проверяем баланс 
+        // 2. Проверяем баланс
         current, _, err := s.GetUserBalance(ctx, userID)
         if err != nil {
             return fmt.Errorf("failed to check balance: %w", err)
@@ -289,14 +289,23 @@ func (s *OrderService) Withdraw(ctx context.Context, userID int32, orderNumber s
         }
 
         // 4. Создаем запись о списании
-        return q.CreateWithdrawal(ctx, db.CreateWithdrawalParams{
+        err = q.CreateWithdrawal(ctx, db.CreateWithdrawalParams{
             UserID:      pgtype.Int4{Int32: userID, Valid: true},
             OrderNumber: orderNumber,
             Sum:         sum,
         })
+        if err != nil {
+            return fmt.Errorf("failed to create withdrawal: %w", err)
+        }
+
+        // 5. Обновляем баланс (минимальное изменение)
+        _, err = q.UpdateBalanceAfterWithdrawal(ctx, db.UpdateBalanceAfterWithdrawalParams{
+            UserID: pgtype.Int4{Int32: userID, Valid: true},
+            Sum:    sum,
+        })
+        return err
     })
 }
-
 
 func toPgInt4(id int32) pgtype.Int4 {
     return pgtype.Int4{
