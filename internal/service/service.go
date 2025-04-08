@@ -266,19 +266,16 @@ func (s *OrderService) GetUserBalance(ctx context.Context, userID int32) (curren
 //         })
 //     })
 // }
+
 func (s *OrderService) Withdraw(ctx context.Context, userID int32, orderNumber string, sum float64) error {
     if sum <= 0 {
         return errors.New("withdrawal sum must be positive")
     }
 
     return s.repo.ExecTx(ctx, func(q *db.Queries) error {
-        // 1. Конвертируем userID в pgtype.Int4
-        pgUserID := pgtype.Int4{
-            Int32: userID,
-            Valid: true,
-        }
+        pgUserID := pgtype.Int4{Int32: userID, Valid: true}
 
-        // 2. Блокируем и получаем баланс
+        // 1. Блокируем и получаем баланс
         balance, err := q.GetBalanceByUserID(ctx, pgUserID)
         if err != nil {
             if errors.Is(err, pgx.ErrNoRows) {
@@ -287,15 +284,25 @@ func (s *OrderService) Withdraw(ctx context.Context, userID int32, orderNumber s
             return fmt.Errorf("failed to get balance: %w", err)
         }
 
+        // 2. Конвертируем баланс с обработкой ошибок
+        currentBalance, err := numericToFloat(balance.CurrentBalance)
+        if err != nil {
+            return fmt.Errorf("invalid current balance: %w", err)
+        }
+
+        withdrawnBalance, err := numericToFloat(balance.WithdrawnBalance)
+        if err != nil {
+            return fmt.Errorf("invalid withdrawn balance: %w", err)
+        }
+
         // 3. Проверяем достаточность средств
-        balance2,_ := numericToFloat(balance.CurrentBalance)
-        if balance2 < sum {
+        if currentBalance < sum {
             return errors.New("insufficient funds")
         }
 
         // 4. Создаем запись о списании
         err = q.CreateWithdrawal(ctx, db.CreateWithdrawalParams{
-            UserID:      pgUserID, // Используем уже сконвертированный ID
+            UserID:      pgUserID,
             OrderNumber: orderNumber,
             Sum:         sum,
         })
@@ -303,11 +310,17 @@ func (s *OrderService) Withdraw(ctx context.Context, userID int32, orderNumber s
             return fmt.Errorf("failed to create withdrawal: %w", err)
         }
 
-        // 5. Обновляем баланс
-        balanceWithdrawn,_ := numericToFloat(balance.WithdrawnBalance)
-        newBalance,_ := float64ToNumeric(balance2 - sum)
-        newWithdrawn,_ := float64ToNumeric(balanceWithdrawn + sum)
-        
+        // 5. Обновляем баланс с проверкой ошибок
+        newBalance, err := float64ToNumeric(currentBalance - sum)
+        if err != nil {
+            return fmt.Errorf("failed to convert new balance: %w", err)
+        }
+
+        newWithdrawn, err := float64ToNumeric(withdrawnBalance + sum)
+        if err != nil {
+            return fmt.Errorf("failed to convert withdrawn balance: %w", err)
+        }
+
         return q.UpdateBalance(ctx, db.UpdateBalanceParams{
             UserID:           pgUserID,
             CurrentBalance:   newBalance,
@@ -315,6 +328,56 @@ func (s *OrderService) Withdraw(ctx context.Context, userID int32, orderNumber s
         })
     })
 }
+
+// func (s *OrderService) Withdraw(ctx context.Context, userID int32, orderNumber string, sum float64) error {
+//     if sum <= 0 {
+//         return errors.New("withdrawal sum must be positive")
+//     }
+
+//     return s.repo.ExecTx(ctx, func(q *db.Queries) error {
+//         // 1. Конвертируем userID в pgtype.Int4
+//         pgUserID := pgtype.Int4{
+//             Int32: userID,
+//             Valid: true,
+//         }
+
+//         // 2. Блокируем и получаем баланс
+//         balance, err := q.GetBalanceByUserID(ctx, pgUserID)
+//         if err != nil {
+//             if errors.Is(err, pgx.ErrNoRows) {
+//                 return fmt.Errorf("account not found for user %d", userID)
+//             }
+//             return fmt.Errorf("failed to get balance: %w", err)
+//         }
+
+//         // 3. Проверяем достаточность средств
+//         balance2,_ := numericToFloat(balance.CurrentBalance)
+//         if balance2 < sum {
+//             return errors.New("insufficient funds")
+//         }
+
+//         // 4. Создаем запись о списании
+//         err = q.CreateWithdrawal(ctx, db.CreateWithdrawalParams{
+//             UserID:      pgUserID, // Используем уже сконвертированный ID
+//             OrderNumber: orderNumber,
+//             Sum:         sum,
+//         })
+//         if err != nil {
+//             return fmt.Errorf("failed to create withdrawal: %w", err)
+//         }
+
+//         // 5. Обновляем баланс
+//         balanceWithdrawn,_ := numericToFloat(balance.WithdrawnBalance)
+//         newBalance,_ := float64ToNumeric(balance2 - sum)
+//         newWithdrawn,_ := float64ToNumeric(balanceWithdrawn + sum)
+        
+//         return q.UpdateBalance(ctx, db.UpdateBalanceParams{
+//             UserID:           pgUserID,
+//             CurrentBalance:   newBalance,
+//             WithdrawnBalance: newWithdrawn,
+//         })
+//     })
+// }
 
 // numericToFloat конвертирует pgtype.Numeric в float64
 func numericToFloat(num pgtype.Numeric) (float64, error) {
