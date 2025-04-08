@@ -10,6 +10,8 @@ import (
     "net/http"
     "utils"
     "errors"
+    "strconv"
+    "strings"
 )
 
 type OrderService struct {
@@ -82,34 +84,34 @@ func (s *OrderService) UpdateOrder(ctx context.Context, orderNumber string, stat
     return nil
 }
 
-func (s *OrderService) PollOrderStatus(orderNumber string) error {
-    ctx := context.Background() // Создаем контекст
-    maxAttempts := 10           // Максимальное количество попыток
-    interval := 2 * time.Second // Интервал между запросами
+// func (s *OrderService) PollOrderStatus(orderNumber string) error {
+//     ctx := context.Background() // Создаем контекст
+//     maxAttempts := 10           // Максимальное количество попыток
+//     interval := 2 * time.Second // Интервал между запросами
 
-    for attempt := 0; attempt < maxAttempts; attempt++ {
-        // Запрашиваем статус заказа у внешней системы
-        status, accrual, err := s.fetchAccrualStatus(ctx, orderNumber) // Передаем контекст
-        if err != nil {
-            return fmt.Errorf("failed to fetch accrual status: %w", err)
-        }
+//     for attempt := 0; attempt < maxAttempts; attempt++ {
+//         // Запрашиваем статус заказа у внешней системы
+//         status, accrual, err := s.fetchAccrualStatus(ctx, orderNumber) // Передаем контекст
+//         if err != nil {
+//             return fmt.Errorf("failed to fetch accrual status: %w", err)
+//         }
 
-        // Обновляем статус заказа в базе данных
-        if err := s.UpdateOrder(ctx, orderNumber, status, accrual); err != nil { // Передаем контекст
-            return fmt.Errorf("failed to update order: %w", err)
-        }
+//         // Обновляем статус заказа в базе данных
+//         if err := s.UpdateOrder(ctx, orderNumber, status, accrual); err != nil { // Передаем контекст
+//             return fmt.Errorf("failed to update order: %w", err)
+//         }
 
-        // Если заказ обработан, завершаем опрос
-        if status == "PROCESSED" || status == "INVALID" {
-            return nil
-        }
+//         // Если заказ обработан, завершаем опрос
+//         if status == "PROCESSED" || status == "INVALID" {
+//             return nil
+//         }
 
-        // Ждем перед следующим запросом
-        time.Sleep(interval)
-    }
+//         // Ждем перед следующим запросом
+//         time.Sleep(interval)
+//     }
 
-    return fmt.Errorf("failed to process order %s after %d attempts", orderNumber, maxAttempts)
-}
+//     return fmt.Errorf("failed to process order %s after %d attempts", orderNumber, maxAttempts)
+// }
 
 type AccrualResponse struct {
     Order   string  `json:"order"`
@@ -117,48 +119,131 @@ type AccrualResponse struct {
     Accrual float64 `json:"accrual,omitempty"`
 }
 
-func (s *OrderService) fetchAccrualStatus(ctx context.Context, orderNumber string) (string, float64, error) {
-    // Формируем URL для запроса
-    url := fmt.Sprintf("%s/api/orders/%s", s.config.AccrualSystemAddress, orderNumber)
+// func (s *OrderService) fetchAccrualStatus(ctx context.Context, orderNumber string) (string, float64, error) {
+//     // Формируем URL для запроса
+//     url := fmt.Sprintf("%s/api/orders/%s", s.config.AccrualSystemAddress, orderNumber)
 
-    // Создаем HTTP-запрос с контекстом
+//     // Создаем HTTP-запрос с контекстом
+//     req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+//     if err != nil {
+//         return "", 0, fmt.Errorf("failed to create request: %w", err)
+//     }
+
+//     // Создаем HTTP-клиент с таймаутом
+//     client := &http.Client{
+//         Timeout: 10 * time.Second,
+//     }
+
+//     // Выполняем GET-запрос
+//     resp, err := client.Do(req)
+//     if err != nil {
+//         return "", 0, fmt.Errorf("failed to make request to accrual system: %w", err)
+//     }
+//     defer resp.Body.Close()
+
+//     // Обрабатываем ответ
+//     switch resp.StatusCode {
+//     case http.StatusOK: // 200
+//         var accrualResp AccrualResponse
+//         if err := json.NewDecoder(resp.Body).Decode(&accrualResp); err != nil {
+//             return "", 0, fmt.Errorf("failed to decode response: %w", err)
+//         }
+//         return accrualResp.Status, accrualResp.Accrual, nil
+
+//     case http.StatusNoContent: // 204
+//         return "REGISTERED", 0, nil
+
+//     case http.StatusTooManyRequests: // 429
+//         retryAfter := resp.Header.Get("Retry-After")
+//         if retryAfter == "" {
+//             retryAfter = "60" // Значение по умолчанию, если заголовок отсутствует
+//         }
+//         return "", 0, fmt.Errorf("rate limit exceeded, retry after %s seconds", retryAfter)
+
+//     case http.StatusInternalServerError: // 500
+//         return "", 0, fmt.Errorf("internal server error in accrual system")
+
+//     default:
+//         return "", 0, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+//     }
+// }
+func (s *OrderService) PollOrderStatus(orderNumber string) error {
+    ctx := context.Background()
+    maxAttempts := 10
+    baseInterval := 2 * time.Second
+
+    for attempt := 0; attempt < maxAttempts; attempt++ {
+        status, accrual, err := s.fetchAccrualStatus(ctx, orderNumber)
+        if err != nil {
+            // Если получили ошибку с рекомендацией Retry-After
+            if retryAfter := parseRetryAfterError(err); retryAfter > 0 {
+                time.Sleep(retryAfter)
+                continue
+            }
+            return fmt.Errorf("failed to fetch accrual status: %w", err)
+        }
+
+        if err := s.UpdateOrder(ctx, orderNumber, status, accrual); err != nil {
+            return fmt.Errorf("failed to update order: %w", err)
+        }
+
+        if status == "PROCESSED" || status == "INVALID" {
+            return nil
+        }
+
+        time.Sleep(baseInterval)
+    }
+
+    return fmt.Errorf("failed to process order %s after %d attempts", orderNumber, maxAttempts)
+}
+
+func parseRetryAfterError(err error) time.Duration {
+    const prefix = "rate limit exceeded, retry after "
+    errStr := err.Error()
+    
+    if strings.HasPrefix(errStr, prefix) {
+        secondsStr := strings.TrimPrefix(errStr, prefix)
+        seconds, err := strconv.Atoi(secondsStr)
+        if err == nil {
+            return time.Duration(seconds) * time.Second
+        }
+    }
+    return 0
+}
+
+func (s *OrderService) fetchAccrualStatus(ctx context.Context, orderNumber string) (string, float64, error) {
+    url := fmt.Sprintf("%s/api/orders/%s", s.config.AccrualSystemAddress, orderNumber)
     req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
     if err != nil {
         return "", 0, fmt.Errorf("failed to create request: %w", err)
     }
 
-    // Создаем HTTP-клиент с таймаутом
-    client := &http.Client{
-        Timeout: 10 * time.Second,
-    }
-
-    // Выполняем GET-запрос
+    client := &http.Client{Timeout: 10 * time.Second}
     resp, err := client.Do(req)
     if err != nil {
         return "", 0, fmt.Errorf("failed to make request to accrual system: %w", err)
     }
     defer resp.Body.Close()
 
-    // Обрабатываем ответ
     switch resp.StatusCode {
-    case http.StatusOK: // 200
+    case http.StatusOK:
         var accrualResp AccrualResponse
         if err := json.NewDecoder(resp.Body).Decode(&accrualResp); err != nil {
             return "", 0, fmt.Errorf("failed to decode response: %w", err)
         }
         return accrualResp.Status, accrualResp.Accrual, nil
 
-    case http.StatusNoContent: // 204
+    case http.StatusNoContent:
         return "REGISTERED", 0, nil
 
-    case http.StatusTooManyRequests: // 429
+    case http.StatusTooManyRequests:
         retryAfter := resp.Header.Get("Retry-After")
         if retryAfter == "" {
-            retryAfter = "60" // Значение по умолчанию, если заголовок отсутствует
+            retryAfter = "60"
         }
-        return "", 0, fmt.Errorf("rate limit exceeded, retry after %s seconds", retryAfter)
+        return "", 0, fmt.Errorf("rate limit exceeded, retry after %s", retryAfter)
 
-    case http.StatusInternalServerError: // 500
+    case http.StatusInternalServerError:
         return "", 0, fmt.Errorf("internal server error in accrual system")
 
     default:
