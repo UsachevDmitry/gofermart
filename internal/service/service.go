@@ -14,6 +14,7 @@ import (
     "strings"
     "sync"
     "log"
+    "math/big"
 )
 
 type AccrualResponse struct {
@@ -262,16 +263,27 @@ func (s *OrderService) GetUserBalance(ctx context.Context, userID int32) (curren
 //     return nil
 // }
 
+
 // numericToFloat конвертирует pgtype.Numeric в float64
 func numericToFloat(num pgtype.Numeric) (float64, error) {
     if !num.Valid {
         return 0, errors.New("invalid numeric value")
     }
-    // Для pgx v4/v5 используем Int или Float в зависимости от реализации
+    
+    // Для версий pgx, где Numeric использует Int и Exp
     if num.Int != nil {
-        return float64(num.Int.Int64()) / float64(num.Exp), nil
+        // Преобразуем big.Int в float64 с учетом экспоненты
+        floatValue := new(big.Float).SetInt(num.Int)
+        if num.Exp != 0 {
+            exp := big.NewInt(10)
+            exp.Exp(exp, big.NewInt(int64(num.Exp)), nil)
+            floatValue.Quo(floatValue, new(big.Float).SetInt(exp))
+        }
+        result, _ := floatValue.Float64()
+        return result, nil
     }
-    return 0, errors.New("numeric value not in expected format")
+    
+    return 0, errors.New("unsupported numeric format")
 }
 
 // floatToNumeric конвертирует float64 в pgtype.Numeric
@@ -282,6 +294,10 @@ func floatToNumeric(f float64) (pgtype.Numeric, error) {
 }
 
 func (s *OrderService) Withdraw(ctx context.Context, userID int32, orderNumber string, sum float64) error {
+    if sum <= 0 {
+        return errors.New("withdrawal sum must be positive")
+    }
+
     return s.repo.ExecTx(ctx, func(q *db.Queries) error {
         // 1. Блокируем запись пользователя
         account, err := q.GetLoyaltyAccountForUpdate(ctx, pgtype.Int4{Int32: userID, Valid: true})
@@ -295,8 +311,8 @@ func (s *OrderService) Withdraw(ctx context.Context, userID int32, orderNumber s
             return fmt.Errorf("invalid balance format: %w", err)
         }
 
-        // 3. Проверяем баланс
-        if currentBalance < sum {
+        // 3. Проверяем баланс с учетом погрешности
+        if currentBalance < sum - 1e-8 { // Допустимая погрешность
             return errors.New("insufficient funds")
         }
 
@@ -323,6 +339,7 @@ func (s *OrderService) Withdraw(ctx context.Context, userID int32, orderNumber s
         })
     })
 }
+
 func (s *OrderService) GetUserWithdrawals(ctx context.Context, userID int32) ([]db.Withdrawal, error) {
     withdrawals, err := s.repo.GetWithdrawalsByUserID(ctx, pgtype.Int4{Int32: userID, Valid: true})
     if err != nil {
