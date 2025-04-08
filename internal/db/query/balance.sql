@@ -2,8 +2,7 @@
 SELECT current_balance, withdrawn_balance
 FROM loyalty_accounts
 WHERE user_id = $1
-LIMIT 1
-FOR UPDATE;
+LIMIT 1;
 
 -- name: CreateWithdrawal :exec
 INSERT INTO withdrawals (user_id, order_number, sum)

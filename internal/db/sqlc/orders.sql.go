@@ -103,6 +103,7 @@ SELECT order_number, user_id, status, accrual, uploaded_at
 FROM orders
 WHERE user_id = $1 AND status = 'PROCESSED'
 ORDER BY uploaded_at DESC
+FOR UPDATE
 `
 
 type GetProcessedOrdersByUserIDRow struct {
