@@ -192,7 +192,7 @@ func (s *OrderService) fetchAccrualStatus(ctx context.Context, orderNumber strin
         return accrualResp.Status, accrualResp.Accrual, nil
 
     case http.StatusNoContent:
-        return "REGISTERED", 0, nil
+        return "NEW", 0, nil //REGISTERED
 
     case http.StatusTooManyRequests:
         retryAfter := resp.Header.Get("Retry-After")
