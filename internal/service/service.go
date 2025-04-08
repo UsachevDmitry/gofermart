@@ -239,28 +239,54 @@ func (s *OrderService) GetUserBalance(ctx context.Context, userID int32) (curren
     return totalAccrual - totalWithdrawn, totalWithdrawn, nil
 }
 
+// func (s *OrderService) Withdraw(ctx context.Context, userID int32, orderNumber string, sum float64) error {
+//     // Проверяем баланс
+//     current, _, err := s.GetUserBalance(ctx, userID)
+//     if err != nil {
+//         return fmt.Errorf("failed to check balance: %w", err)
+//     }
+
+//     if current < sum {
+//         return errors.New("insufficient funds")
+//     }
+
+//     // Создаем запись о списании
+//     err = s.repo.CreateWithdrawal(ctx, db.CreateWithdrawalParams{
+//         UserID:      pgtype.Int4{Int32: userID, Valid: true},
+//         OrderNumber: orderNumber,
+//         Sum:         sum,
+//     })
+//     if err != nil {
+//         return fmt.Errorf("failed to create withdrawal: %w", err)
+//     }
+
+//     return nil
+// }
+
 func (s *OrderService) Withdraw(ctx context.Context, userID int32, orderNumber string, sum float64) error {
-    // Проверяем баланс
-    current, _, err := s.GetUserBalance(ctx, userID)
-    if err != nil {
-        return fmt.Errorf("failed to check balance: %w", err)
+    if sum <= 0 {
+        return errors.New("withdrawal sum must be positive")
     }
 
-    if current < sum {
-        return errors.New("insufficient funds")
-    }
+    return s.repo.ExecTx(ctx, func(q *db.Queries) error {
+        // 1. Проверяем баланс (через существующий метод)
+        current, _, err := s.GetUserBalance(ctx, userID)
+        if err != nil {
+            return fmt.Errorf("failed to check balance: %w", err)
+        }
 
-    // Создаем запись о списании
-    err = s.repo.CreateWithdrawal(ctx, db.CreateWithdrawalParams{
-        UserID:      pgtype.Int4{Int32: userID, Valid: true},
-        OrderNumber: orderNumber,
-        Sum:         sum,
+        // 2. Проверяем достаточность средств
+        if current < sum {
+            return errors.New("insufficient funds")
+        }
+
+        // 3. Создаем запись о списании (без изменения баланса)
+        return q.CreateWithdrawal(ctx, db.CreateWithdrawalParams{
+            UserID:      pgtype.Int4{Int32: userID, Valid: true},
+            OrderNumber: orderNumber,
+            Sum:         sum,
+        })
     })
-    if err != nil {
-        return fmt.Errorf("failed to create withdrawal: %w", err)
-    }
-
-    return nil
 }
 
 
