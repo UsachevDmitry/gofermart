@@ -51,7 +51,7 @@ func (server *Server) uploadOrder(ctx *gin.Context) {
 		}
 	}
 
-	// Сохраняем заказ со статусом NEW/REGISTER
+	// Сохраняем заказ со статусом NEW/REGISTERED
 	if err := server.store.SaveOrder(ctx, db.SaveOrderParams{
 		OrderNumber: string(orderNumber),
 		UserID:      userID,
