@@ -41,25 +41,6 @@ func (q *Queries) CreateLoyaltyTransaction(ctx context.Context, arg CreateLoyalt
 	return err
 }
 
-const getLoyaltyAccountForUpdate = `-- name: GetLoyaltyAccountForUpdate :one
-SELECT id, user_id, current_balance, withdrawn_balance, updated_at FROM loyalty_accounts 
-WHERE user_id = $1 
-FOR UPDATE
-`
-
-func (q *Queries) GetLoyaltyAccountForUpdate(ctx context.Context, userID pgtype.Int4) (LoyaltyAccount, error) {
-	row := q.db.QueryRow(ctx, getLoyaltyAccountForUpdate, userID)
-	var i LoyaltyAccount
-	err := row.Scan(
-		&i.ID,
-		&i.UserID,
-		&i.CurrentBalance,
-		&i.WithdrawnBalance,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
 const getLoyaltyAccountID = `-- name: GetLoyaltyAccountID :one
 SELECT id
 FROM loyalty_accounts
