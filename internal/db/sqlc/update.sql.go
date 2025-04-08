@@ -12,6 +12,7 @@ import (
 )
 
 const createLoyaltyTransaction = `-- name: CreateLoyaltyTransaction :exec
+
 INSERT INTO loyalty_transactions (
     account_id,
     order_id,
@@ -31,6 +32,16 @@ type CreateLoyaltyTransactionParams struct {
 	TransactionType string      `json:"transaction_type"`
 }
 
+// -- name: UpdateLoyaltyAccountBalance :exec
+// UPDATE loyalty_accounts
+// SET
+//
+//	current_balance = current_balance + $1,
+//	updated_at = NOW()
+//
+// WHERE
+//
+//	user_id = $2;
 func (q *Queries) CreateLoyaltyTransaction(ctx context.Context, arg CreateLoyaltyTransactionParams) error {
 	_, err := q.db.Exec(ctx, createLoyaltyTransaction,
 		arg.AccountID,
@@ -39,6 +50,25 @@ func (q *Queries) CreateLoyaltyTransaction(ctx context.Context, arg CreateLoyalt
 		arg.TransactionType,
 	)
 	return err
+}
+
+const getLoyaltyAccountForUpdate = `-- name: GetLoyaltyAccountForUpdate :one
+SELECT id, user_id, current_balance, withdrawn_balance, updated_at FROM loyalty_accounts
+WHERE user_id = $1
+FOR UPDATE
+`
+
+func (q *Queries) GetLoyaltyAccountForUpdate(ctx context.Context, userID pgtype.Int4) (LoyaltyAccount, error) {
+	row := q.db.QueryRow(ctx, getLoyaltyAccountForUpdate, userID)
+	var i LoyaltyAccount
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.CurrentBalance,
+		&i.WithdrawnBalance,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
 
 const getLoyaltyAccountID = `-- name: GetLoyaltyAccountID :one
@@ -112,20 +142,20 @@ func (q *Queries) SaveOrder(ctx context.Context, arg SaveOrderParams) error {
 
 const updateLoyaltyAccountBalance = `-- name: UpdateLoyaltyAccountBalance :exec
 UPDATE loyalty_accounts
-SET
-    current_balance = current_balance + $1,
+SET current_balance = $2,
+    withdrawn_balance = $3,
     updated_at = NOW()
-WHERE
-    user_id = $2
+WHERE user_id = $1
 `
 
 type UpdateLoyaltyAccountBalanceParams struct {
-	CurrentBalance pgtype.Numeric `json:"current_balance"`
-	UserID         pgtype.Int4    `json:"user_id"`
+	UserID           pgtype.Int4    `json:"user_id"`
+	CurrentBalance   pgtype.Numeric `json:"current_balance"`
+	WithdrawnBalance pgtype.Numeric `json:"withdrawn_balance"`
 }
 
 func (q *Queries) UpdateLoyaltyAccountBalance(ctx context.Context, arg UpdateLoyaltyAccountBalanceParams) error {
-	_, err := q.db.Exec(ctx, updateLoyaltyAccountBalance, arg.CurrentBalance, arg.UserID)
+	_, err := q.db.Exec(ctx, updateLoyaltyAccountBalance, arg.UserID, arg.CurrentBalance, arg.WithdrawnBalance)
 	return err
 }
 
