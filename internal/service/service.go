@@ -301,7 +301,7 @@ func (s *OrderService) Withdraw(ctx context.Context, userID int32, orderNumber s
         newBalance :=  CurrentBalance2 - sum
         newWithdrawn :=  WithdrawnBalance + sum
         newBalance2,_ := float64ToNumeric(newBalance)
-        newWithdrawn2,_ := float64ToNumeric(newWithdrawn + sum)
+        newWithdrawn2,_ := float64ToNumeric(newWithdrawn)
         
         return q.UpdateLoyaltyAccountBalance(ctx, db.UpdateLoyaltyAccountBalanceParams{
             UserID:         pgtype.Int4{Int32: userID, Valid: true},
