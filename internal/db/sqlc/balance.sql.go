@@ -47,14 +47,9 @@ func (q *Queries) GetBalanceByUserID(ctx context.Context, userID pgtype.Int4) (G
 }
 
 const getWithdrawalsByUserID = `-- name: GetWithdrawalsByUserID :many
-SELECT 
-    order_number, 
-    user_id, 
-    sum, 
-    processed_at
-FROM withdrawals
-WHERE 
-    user_id = $1
+SELECT order_number, user_id, sum, processed_at 
+FROM withdrawals 
+WHERE user_id = $1
 ORDER BY processed_at DESC
 `
 

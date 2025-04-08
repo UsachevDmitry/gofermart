@@ -12,6 +12,8 @@ import (
     "errors"
     "strconv"
     "strings"
+    "sync"
+    "log"
 )
 
 type AccrualResponse struct {
@@ -20,14 +22,64 @@ type AccrualResponse struct {
     Accrual float64 `json:"accrual,omitempty"`
 }
 
+// type OrderService struct {
+//     repo *db.Store
+//     config *utils.Config }
+
 type OrderService struct {
-    repo *db.Store
-    config *utils.Config }
+    repo        *db.Store
+    config      *utils.Config
+    pendingJobs map[string]bool // Трекер активных заказов
+    mu          sync.Mutex      // Для безопасного доступа к pendingJobs
+}
+
+// func NewOrderService(repo *db.Store, config *utils.Config) *OrderService {
+//     return &OrderService{
+//         repo:   repo,
+//         config: config,
+//     }
+// }
 
 func NewOrderService(repo *db.Store, config *utils.Config) *OrderService {
-    return &OrderService{
-        repo:   repo,
-        config: config,
+    s := &OrderService{
+        repo:       repo,
+        config:     config,
+        pendingJobs: make(map[string]bool),
+    }
+    go s.restorePendingOrders() // Восстановление при старте
+    return s
+}
+
+// func (s *OrderService) restorePendingOrders() {
+//     ctx := context.Background()
+//     orders, err := s.repo.GetUnprocessedOrders(ctx) // Нужно добавить этот метод в репозиторий
+//     if err != nil {
+//         log.Printf("failed to restore pending orders: %v", err)
+//         return
+//     }
+
+//     for _, order := range orders {
+//         s.mu.Lock()
+//         if !s.pendingJobs[order.OrderNumber] {
+//             s.pendingJobs[order.OrderNumber] = true
+//             go s.PollOrderStatus(order.OrderNumber)
+//         }
+//         s.mu.Unlock()
+//     }
+// }
+
+func (s *OrderService) restorePendingOrders() {
+    ctx := context.Background()
+    
+    // Используем сгенерированный sqlc метод
+    orders, err := s.repo.GetUnprocessedOrders(ctx)
+    if err != nil {
+        log.Printf("failed to get unprocessed orders: %v", err)
+        return
+    }
+    
+    for _, order := range orders {
+        go s.PollOrderStatus(order.OrderNumber)
     }
 }
 
@@ -90,7 +142,51 @@ func (s *OrderService) UpdateOrder(ctx context.Context, orderNumber string, stat
     return nil
 }
 
+// func (s *OrderService) PollOrderStatus(orderNumber string) error {
+//     ctx := context.Background()
+//     maxAttempts := 10
+//     baseInterval := 2 * time.Second
+
+//     for attempt := 0; attempt < maxAttempts; attempt++ {
+//         status, accrual, err := s.fetchAccrualStatus(ctx, orderNumber)
+//         if err != nil {
+//             // Если получили ошибку с рекомендацией Retry-After
+//             if retryAfter := parseRetryAfterError(err); retryAfter > 0 {
+//                 time.Sleep(retryAfter)
+//                 continue
+//             }
+//             return fmt.Errorf("failed to fetch accrual status: %w", err)
+//         }
+
+//         if err := s.UpdateOrder(ctx, orderNumber, status, accrual); err != nil {
+//             return fmt.Errorf("failed to update order: %w", err)
+//         }
+
+//         if status == "PROCESSED" || status == "INVALID" {
+//             return nil
+//         }
+
+//         time.Sleep(baseInterval)
+//     }
+
+//     return fmt.Errorf("failed to process order %s after %d attempts", orderNumber, maxAttempts)
+// }
+
 func (s *OrderService) PollOrderStatus(orderNumber string) error {
+    s.mu.Lock()
+    if s.pendingJobs[orderNumber] {
+        s.mu.Unlock()
+        return nil // Уже обрабатывается
+    }
+    s.pendingJobs[orderNumber] = true
+    s.mu.Unlock()
+
+    defer func() {
+        s.mu.Lock()
+        delete(s.pendingJobs, orderNumber)
+        s.mu.Unlock()
+    }()
+
     ctx := context.Background()
     maxAttempts := 10
     baseInterval := 2 * time.Second
@@ -98,7 +194,6 @@ func (s *OrderService) PollOrderStatus(orderNumber string) error {
     for attempt := 0; attempt < maxAttempts; attempt++ {
         status, accrual, err := s.fetchAccrualStatus(ctx, orderNumber)
         if err != nil {
-            // Если получили ошибку с рекомендацией Retry-After
             if retryAfter := parseRetryAfterError(err); retryAfter > 0 {
                 time.Sleep(retryAfter)
                 continue

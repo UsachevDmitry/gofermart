@@ -97,3 +97,75 @@ func (q *Queries) GetOrdersByUserID(ctx context.Context, userID pgtype.Int4) ([]
 	}
 	return items, nil
 }
+
+const getProcessedOrdersByUserID = `-- name: GetProcessedOrdersByUserID :many
+SELECT order_number, user_id, status, accrual, uploaded_at 
+FROM orders 
+WHERE user_id = $1 AND status = 'PROCESSED'
+`
+
+type GetProcessedOrdersByUserIDRow struct {
+	OrderNumber string           `json:"order_number"`
+	UserID      pgtype.Int4      `json:"user_id"`
+	Status      string           `json:"status"`
+	Accrual     pgtype.Float8    `json:"accrual"`
+	UploadedAt  pgtype.Timestamp `json:"uploaded_at"`
+}
+
+func (q *Queries) GetProcessedOrdersByUserID(ctx context.Context, userID pgtype.Int4) ([]GetProcessedOrdersByUserIDRow, error) {
+	rows, err := q.db.Query(ctx, getProcessedOrdersByUserID, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetProcessedOrdersByUserIDRow{}
+	for rows.Next() {
+		var i GetProcessedOrdersByUserIDRow
+		if err := rows.Scan(
+			&i.OrderNumber,
+			&i.UserID,
+			&i.Status,
+			&i.Accrual,
+			&i.UploadedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getUnprocessedOrders = `-- name: GetUnprocessedOrders :many
+SELECT id, order_number, status 
+FROM orders 
+WHERE status NOT IN ('PROCESSED', 'INVALID')
+`
+
+type GetUnprocessedOrdersRow struct {
+	ID          int32  `json:"id"`
+	OrderNumber string `json:"order_number"`
+	Status      string `json:"status"`
+}
+
+func (q *Queries) GetUnprocessedOrders(ctx context.Context) ([]GetUnprocessedOrdersRow, error) {
+	rows, err := q.db.Query(ctx, getUnprocessedOrders)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetUnprocessedOrdersRow{}
+	for rows.Next() {
+		var i GetUnprocessedOrdersRow
+		if err := rows.Scan(&i.ID, &i.OrderNumber, &i.Status); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
