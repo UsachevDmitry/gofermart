@@ -16,11 +16,6 @@ FROM orders
 WHERE user_id = $1
 ORDER BY uploaded_at DESC;
 
--- -- name: GetProcessedOrdersByUserID :many
--- SELECT order_number, user_id, status, accrual, uploaded_at 
--- FROM orders 
--- WHERE user_id = $1 AND status = 'PROCESSED';
-
 -- name: GetUnprocessedOrders :many
 SELECT id, order_number, status 
 FROM orders 
