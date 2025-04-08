@@ -238,25 +238,57 @@ func (s *OrderService) GetUserBalance(ctx context.Context, userID int32) (curren
     return totalAccrual - totalWithdrawn, totalWithdrawn, nil
 }
 
+// func (s *OrderService) Withdraw(ctx context.Context, userID int32, orderNumber string, sum float64) error {
+//     if sum <= 0 {
+//         return errors.New("withdrawal sum must be positive")
+//     }
+
+//     return s.repo.ExecTx(ctx, func(q *db.Queries) error {
+        
+//         // 1. Проверяем баланс 
+//         current, _, err := s.GetUserBalance(ctx, userID)
+//         if err != nil {
+//             return fmt.Errorf("failed to check balance: %w", err)
+//         }
+
+//         // 2. Проверяем достаточность средств
+//         if current < sum {
+//             return errors.New("insufficient funds")
+//         }
+
+//         // 3. Создаем запись о списании (без изменения баланса)
+//         return q.CreateWithdrawal(ctx, db.CreateWithdrawalParams{
+//             UserID:      pgtype.Int4{Int32: userID, Valid: true},
+//             OrderNumber: orderNumber,
+//             Sum:         sum,
+//         })
+//     })
+// }
+
 func (s *OrderService) Withdraw(ctx context.Context, userID int32, orderNumber string, sum float64) error {
     if sum <= 0 {
         return errors.New("withdrawal sum must be positive")
     }
 
     return s.repo.ExecTx(ctx, func(q *db.Queries) error {
+        // 1. Добавляем блокировку аккаунта
+        _, err := q.GetLoyaltyAccountForUpdate(ctx, pgtype.Int4{Int32: userID, Valid: true})
+        if err != nil {
+            return fmt.Errorf("failed to lock account: %w", err)
+        }
         
-        // 1. Проверяем баланс 
+        // 2. Проверяем баланс 
         current, _, err := s.GetUserBalance(ctx, userID)
         if err != nil {
             return fmt.Errorf("failed to check balance: %w", err)
         }
 
-        // 2. Проверяем достаточность средств
+        // 3. Проверяем достаточность средств
         if current < sum {
             return errors.New("insufficient funds")
         }
 
-        // 3. Создаем запись о списании (без изменения баланса)
+        // 4. Создаем запись о списании
         return q.CreateWithdrawal(ctx, db.CreateWithdrawalParams{
             UserID:      pgtype.Int4{Int32: userID, Valid: true},
             OrderNumber: orderNumber,
