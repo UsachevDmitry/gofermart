@@ -99,9 +99,10 @@ func (q *Queries) GetOrdersByUserID(ctx context.Context, userID pgtype.Int4) ([]
 }
 
 const getProcessedOrdersByUserID = `-- name: GetProcessedOrdersByUserID :many
-SELECT order_number, user_id, status, accrual, uploaded_at 
-FROM orders 
+SELECT order_number, user_id, status, accrual, uploaded_at
+FROM orders
 WHERE user_id = $1 AND status = 'PROCESSED'
+ORDER BY uploaded_at DESC
 `
 
 type GetProcessedOrdersByUserIDRow struct {
@@ -139,6 +140,7 @@ func (q *Queries) GetProcessedOrdersByUserID(ctx context.Context, userID pgtype.
 }
 
 const getUnprocessedOrders = `-- name: GetUnprocessedOrders :many
+
 SELECT id, order_number, status 
 FROM orders 
 WHERE status NOT IN ('PROCESSED', 'INVALID')
@@ -150,6 +152,10 @@ type GetUnprocessedOrdersRow struct {
 	Status      string `json:"status"`
 }
 
+// -- name: GetProcessedOrdersByUserID :many
+// SELECT order_number, user_id, status, accrual, uploaded_at
+// FROM orders
+// WHERE user_id = $1 AND status = 'PROCESSED';
 func (q *Queries) GetUnprocessedOrders(ctx context.Context) ([]GetUnprocessedOrdersRow, error) {
 	rows, err := q.db.Query(ctx, getUnprocessedOrders)
 	if err != nil {
