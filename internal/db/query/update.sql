@@ -52,3 +52,8 @@ INSERT INTO orders (
 VALUES (
     $1, $2, $3, $4, NOW()
 );
+
+-- name: GetLoyaltyAccountForUpdate :one
+SELECT * FROM loyalty_accounts 
+WHERE user_id = $1 
+FOR UPDATE;
