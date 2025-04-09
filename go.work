@@ -1,0 +1,10 @@
+go 1.22.12
+
+use (
+	../gofermart
+	./internal/api
+	./internal/db
+	./internal/middleware
+	./internal/service
+	./internal/utils
+)
