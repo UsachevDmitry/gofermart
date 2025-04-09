@@ -238,83 +238,31 @@ func (s *OrderService) GetUserBalance(ctx context.Context, userID int32) (curren
     return totalAccrual - totalWithdrawn, totalWithdrawn, nil
 }
 
-// func (s *OrderService) Withdraw(ctx context.Context, userID int32, orderNumber string, sum float64) error {
-//     if sum <= 0 {
-//         return errors.New("withdrawal sum must be positive")
-//     }
-
-//     return s.repo.ExecTx(ctx, func(q *db.Queries) error {
-        
-//         // 1. Проверяем баланс 
-//         current, _, err := s.GetUserBalance(ctx, userID)
-//         if err != nil {
-//             return fmt.Errorf("failed to check balance: %w", err)
-//         }
-
-//         // 2. Проверяем достаточность средств
-//         if current < sum {
-//             return errors.New("insufficient funds")
-//         }
-
-//         // 3. Создаем запись о списании (без изменения баланса)
-//         return q.CreateWithdrawal(ctx, db.CreateWithdrawalParams{
-//             UserID:      pgtype.Int4{Int32: userID, Valid: true},
-//             OrderNumber: orderNumber,
-//             Sum:         sum,
-//         })
-//     })
-// }
-
 func (s *OrderService) Withdraw(ctx context.Context, userID int32, orderNumber string, sum float64) error {
     if sum <= 0 {
         return errors.New("withdrawal sum must be positive")
     }
 
     return s.repo.ExecTx(ctx, func(q *db.Queries) error {
-        // 1. Блокируем аккаунт для обновления
-        _, err := q.GetLoyaltyAccountForUpdate(ctx, pgtype.Int4{Int32: userID, Valid: true})
-        if err != nil {
-            return fmt.Errorf("failed to lock account: %w", err)
-        }
         
-        // 2. Проверяем баланс
+        // 1. Проверяем баланс 
         current, _, err := s.GetUserBalance(ctx, userID)
         if err != nil {
             return fmt.Errorf("failed to check balance: %w", err)
         }
 
-        // 3. Проверяем достаточность средств
+        // 2. Проверяем достаточность средств
         if current < sum {
             return errors.New("insufficient funds")
         }
 
-        // 4. Создаем запись о списании
-        err = q.CreateWithdrawal(ctx, db.CreateWithdrawalParams{
+        // 3. Создаем запись о списании (без изменения баланса)
+        return q.CreateWithdrawal(ctx, db.CreateWithdrawalParams{
             UserID:      pgtype.Int4{Int32: userID, Valid: true},
             OrderNumber: orderNumber,
             Sum:         sum,
         })
-        if err != nil {
-            return fmt.Errorf("failed to create withdrawal: %w", err)
-        }
-
-
-        // 5. Обновляем баланс (минимальное изменение)
-        sumNumeric,_ := float64ToNumeric(sum)
-
-        err = q.UpdateBalanceAfterWithdrawal(ctx, db.UpdateBalanceAfterWithdrawalParams{
-            UserID: pgtype.Int4{Int32: userID, Valid: true},
-            CurrentBalance:    sumNumeric,
-        })
-        return err
     })
-}
-
-func toPgInt4(id int32) pgtype.Int4 {
-    return pgtype.Int4{
-        Int32: id,
-        Valid: true,
-    }
 }
 
 func (s *OrderService) GetUserWithdrawals(ctx context.Context, userID int32) ([]db.Withdrawal, error) {

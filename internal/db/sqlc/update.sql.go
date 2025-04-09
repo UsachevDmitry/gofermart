@@ -41,19 +41,6 @@ func (q *Queries) CreateLoyaltyTransaction(ctx context.Context, arg CreateLoyalt
 	return err
 }
 
-const getLoyaltyAccountForUpdate = `-- name: GetLoyaltyAccountForUpdate :one
-SELECT user_id FROM loyalty_accounts
-WHERE user_id = $1
-FOR UPDATE
-`
-
-func (q *Queries) GetLoyaltyAccountForUpdate(ctx context.Context, userID pgtype.Int4) (pgtype.Int4, error) {
-	row := q.db.QueryRow(ctx, getLoyaltyAccountForUpdate, userID)
-	var user_id pgtype.Int4
-	err := row.Scan(&user_id)
-	return user_id, err
-}
-
 const getLoyaltyAccountID = `-- name: GetLoyaltyAccountID :one
 SELECT id
 FROM loyalty_accounts
@@ -120,24 +107,6 @@ func (q *Queries) SaveOrder(ctx context.Context, arg SaveOrderParams) error {
 		arg.Status,
 		arg.Accrual,
 	)
-	return err
-}
-
-const updateBalanceAfterWithdrawal = `-- name: UpdateBalanceAfterWithdrawal :exec
-UPDATE loyalty_accounts
-SET 
-    current_balance = current_balance - $2,
-    withdrawn_balance = withdrawn_balance + $2
-WHERE user_id = $1
-`
-
-type UpdateBalanceAfterWithdrawalParams struct {
-	UserID         pgtype.Int4    `json:"user_id"`
-	CurrentBalance pgtype.Numeric `json:"current_balance"`
-}
-
-func (q *Queries) UpdateBalanceAfterWithdrawal(ctx context.Context, arg UpdateBalanceAfterWithdrawalParams) error {
-	_, err := q.db.Exec(ctx, updateBalanceAfterWithdrawal, arg.UserID, arg.CurrentBalance)
 	return err
 }
 
