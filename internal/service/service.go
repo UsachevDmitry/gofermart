@@ -115,7 +115,7 @@ func (s *OrderService) PollOrderStatus(orderNumber string) error {
     s.mu.Lock()
     if s.pendingJobs[orderNumber] {
         s.mu.Unlock()
-        return nil // Уже обрабатывается
+        return nil
     }
     s.pendingJobs[orderNumber] = true
     s.mu.Unlock()
