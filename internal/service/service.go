@@ -298,10 +298,13 @@ func (s *OrderService) Withdraw(ctx context.Context, userID int32, orderNumber s
             return fmt.Errorf("failed to create withdrawal: %w", err)
         }
 
+
         // 5. Обновляем баланс (минимальное изменение)
-        _, err = q.UpdateBalanceAfterWithdrawal(ctx, db.UpdateBalanceAfterWithdrawalParams{
+        sumNumeric,_ := float64ToNumeric(sum)
+
+        err = q.UpdateBalanceAfterWithdrawal(ctx, db.UpdateBalanceAfterWithdrawalParams{
             UserID: pgtype.Int4{Int32: userID, Valid: true},
-            Sum:    sum,
+            CurrentBalance:    sumNumeric,
         })
         return err
     })
